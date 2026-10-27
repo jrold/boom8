@@ -1,0 +1,6 @@
+mpc/build/
+mpc/.mpc-vst-plugins/
+build-host*/
+.DS_Store
+._*
+*.wav

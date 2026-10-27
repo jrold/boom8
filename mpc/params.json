@@ -1,0 +1,426 @@
+{
+ "name": "BOOM8",
+ "params": [
+  {
+   "key": "accent",
+   "name": "Accent",
+   "min": 0,
+   "max": 100,
+   "default": 60,
+   "dynamic_display": true
+  },
+  {
+   "key": "volume",
+   "name": "Volume",
+   "min": -24,
+   "max": 6,
+   "default": 0,
+   "dynamic_display": true
+  },
+  {
+   "key": "bd_level",
+   "name": "BD Level",
+   "min": 0,
+   "max": 100,
+   "default": 80,
+   "dynamic_display": true
+  },
+  {
+   "key": "bd_tone",
+   "name": "BD Tone",
+   "min": 0,
+   "max": 100,
+   "default": 45,
+   "dynamic_display": true
+  },
+  {
+   "key": "bd_decay",
+   "name": "BD Decay",
+   "min": 0,
+   "max": 100,
+   "default": 55,
+   "dynamic_display": true
+  },
+  {
+   "key": "sd_level",
+   "name": "SD Level",
+   "min": 0,
+   "max": 100,
+   "default": 70,
+   "dynamic_display": true
+  },
+  {
+   "key": "sd_tone",
+   "name": "SD Tone",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
+  },
+  {
+   "key": "sd_snappy",
+   "name": "SD Snappy",
+   "min": 0,
+   "max": 100,
+   "default": 60,
+   "dynamic_display": true
+  },
+  {
+   "key": "lt_level",
+   "name": "LT Level",
+   "min": 0,
+   "max": 100,
+   "default": 70,
+   "dynamic_display": true
+  },
+  {
+   "key": "lt_tuning",
+   "name": "LT Tuning",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
+  },
+  {
+   "key": "mt_level",
+   "name": "MT Level",
+   "min": 0,
+   "max": 100,
+   "default": 70,
+   "dynamic_display": true
+  },
+  {
+   "key": "mt_tuning",
+   "name": "MT Tuning",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
+  },
+  {
+   "key": "ht_level",
+   "name": "HT Level",
+   "min": 0,
+   "max": 100,
+   "default": 70,
+   "dynamic_display": true
+  },
+  {
+   "key": "ht_tuning",
+   "name": "HT Tuning",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
+  },
+  {
+   "key": "rs_level",
+   "name": "RS Level",
+   "min": 0,
+   "max": 100,
+   "default": 70,
+   "dynamic_display": true
+  },
+  {
+   "key": "cp_level",
+   "name": "CP Level",
+   "min": 0,
+   "max": 100,
+   "default": 70,
+   "dynamic_display": true
+  },
+  {
+   "key": "cb_level",
+   "name": "CB Level",
+   "min": 0,
+   "max": 100,
+   "default": 60,
+   "dynamic_display": true
+  },
+  {
+   "key": "cy_level",
+   "name": "CY Level",
+   "min": 0,
+   "max": 100,
+   "default": 60,
+   "dynamic_display": true
+  },
+  {
+   "key": "cy_tone",
+   "name": "CY Tone",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
+  },
+  {
+   "key": "cy_decay",
+   "name": "CY Decay",
+   "min": 0,
+   "max": 100,
+   "default": 60,
+   "dynamic_display": true
+  },
+  {
+   "key": "oh_level",
+   "name": "OH Level",
+   "min": 0,
+   "max": 100,
+   "default": 65,
+   "dynamic_display": true
+  },
+  {
+   "key": "oh_decay",
+   "name": "OH Decay",
+   "min": 0,
+   "max": 100,
+   "default": 40,
+   "dynamic_display": true
+  },
+  {
+   "key": "ch_level",
+   "name": "CH Level",
+   "min": 0,
+   "max": 100,
+   "default": 65,
+   "dynamic_display": true
+  },
+  {
+   "key": "velocity",
+   "name": "Velocity",
+   "min": 0,
+   "max": 100,
+   "default": 40,
+   "dynamic_display": true
+  },
+  {
+   "key": "bd_tune",
+   "name": "BD Tune",
+   "min": -12,
+   "max": 12,
+   "default": 0,
+   "dynamic_display": true
+  },
+  {
+   "key": "choke",
+   "name": "Hat Choke",
+   "options": [
+    "Off",
+    "On"
+   ],
+   "default": 1
+  },
+  {
+   "key": "learn",
+   "name": "Pad Learn",
+   "options": [
+    "Off",
+    "On"
+   ],
+   "default": 0
+  },
+  {
+   "key": "pads_clear",
+   "name": "Clear Pads",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 120
+  },
+  {
+   "key": "pads_info",
+   "name": "Pads",
+   "min": 0,
+   "max": 1,
+   "display": "string",
+   "type": "readout"
+  },
+  {
+   "key": "hit_bd",
+   "name": "Play Bass Drum",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_sd",
+   "name": "Play Snare Drum",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_lt",
+   "name": "Play Low Tom",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_mt",
+   "name": "Play Mid Tom",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_ht",
+   "name": "Play Hi Tom",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_rs",
+   "name": "Play Rim Shot",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_cp",
+   "name": "Play Hand Clap",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_cb",
+   "name": "Play Cowbell",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_cy",
+   "name": "Play Cymbal",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_oh",
+   "name": "Play Open Hat",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_ch",
+   "name": "Play Closed Hat",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_lc",
+   "name": "Play Low Conga",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_mc",
+   "name": "Play Mid Conga",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_hc",
+   "name": "Play Hi Conga",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_cl",
+   "name": "Play Claves",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  },
+  {
+   "key": "hit_ma",
+   "name": "Play Maracas",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 60
+  }
+ ],
+ "sections": [
+  {
+   "label": "Drums",
+   "keys": [
+    "accent",
+    "bd_level",
+    "bd_tone",
+    "bd_decay",
+    "sd_level",
+    "sd_tone",
+    "sd_snappy",
+    "lt_level",
+    "lt_tuning",
+    "mt_level",
+    "mt_tuning",
+    "ht_level",
+    "ht_tuning",
+    "bd_tune"
+   ]
+  },
+  {
+   "label": "Percussion",
+   "keys": [
+    "rs_level",
+    "cp_level",
+    "cb_level"
+   ]
+  },
+  {
+   "label": "Metal",
+   "keys": [
+    "cy_level",
+    "cy_tone",
+    "cy_decay",
+    "oh_level",
+    "oh_decay",
+    "ch_level",
+    "choke"
+   ]
+  },
+  {
+   "label": "Master",
+   "keys": [
+    "volume",
+    "accent",
+    "velocity",
+    "bd_tune",
+    "choke"
+   ]
+  },
+  {
+   "label": "Setup",
+   "keys": [
+    "learn",
+    "pads_clear",
+    "pads_info"
+   ]
+  }
+ ]
+}

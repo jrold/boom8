@@ -1,0 +1,27 @@
+{
+  "name": "BOOM8",
+  "vendor": "boom8",
+  "uid": "Bm8x",
+  "version": 100,
+  "so": "boom8.so",
+  "params": "params.json",
+  "layout": "layout.conf",
+  "cc": false,
+  "targets": [
+    "aarch64"
+  ],
+  "defines": {
+    "SAMPLE_ACCURATE": 1,
+    "PARAM_TEXT_MAX": 96,
+    "MODULE_SUBDIR": "\"data\""
+  },
+  "build": {
+    "root": ".",
+    "sources": [
+      "Boom8Mpc.cpp"
+    ],
+    "cflags": [],
+    "libs": []
+  },
+  "skin_post": "skin/skin_post.py"
+}
