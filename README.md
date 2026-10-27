@@ -64,6 +64,26 @@ sixteenth, saves the map with the project, and new BOOM8 tracks start with it
 (`data/padmap.txt`). **STOP twice** stops all sound. Everything is saved with
 the MPC project.
 
+## MIDI LEARN
+
+Map a MIDI controller's knobs and faders to BOOM's controls, on **SETUP**:
+
+1. Tap **MIDI LEARN**; it stays lit.
+2. On MACHINE or MIX, nudge the knob or fader to map (a small move, or its
+   Q-Link); its value stays where it was and its value box reads **LEARN**.
+3. Move the knob or fader on the controller: that CC, on that MIDI channel,
+   now moves the control across its range, and the screen follows.
+4. Nudge another control to map it, or go back to SETUP and tap MIDI LEARN
+   again to finish.
+
+While MIDI LEARN is lit, every mapped control's value box shows its CC
+(**CC21 CH2**). A mapping listens only on the channel it was learned on, so
+other plug-ins can use other channels. A control has one CC and a CC moves one
+control (learning it again moves it). **CLEAR** forgets the control nudged or
+learned last, **CLEAR ALL** every mapping. Mappings are saved with the project
+only; a new track starts with none. The CCs reach the plug-in through the
+track's MIDI input, like the pads' notes.
+
 ## Build and install
 
 ```bash

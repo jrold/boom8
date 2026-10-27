@@ -426,6 +426,39 @@
    "max": 1,
    "default": 0,
    "display": "int"
+  },
+  {
+   "key": "midi_learn",
+   "name": "MIDI Learn",
+   "options": [
+    "Off",
+    "On"
+   ],
+   "default": 0
+  },
+  {
+   "key": "midi_clear",
+   "name": "Clear MIDI",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 120
+  },
+  {
+   "key": "midi_clear_all",
+   "name": "Clear All MIDI",
+   "min": 0,
+   "max": 1,
+   "momentary": true,
+   "hold_ms": 120
+  },
+  {
+   "key": "midi_info",
+   "name": "MIDI",
+   "min": 0,
+   "max": 1,
+   "display": "string",
+   "type": "readout"
   }
  ],
  "sections": [
@@ -483,7 +516,11 @@
     "choke",
     "learn",
     "pads_clear",
-    "pads_info"
+    "pads_info",
+    "midi_learn",
+    "midi_clear",
+    "midi_clear_all",
+    "midi_info"
    ]
   }
  ]

@@ -93,7 +93,7 @@ DOT_R = 6        # the hit dots' knob radius (no other knob may use it; skin_pos
 HEAD_CY = 111    # the middle of the headings' capitals (skin_post.py draws the text at HEAD_Y + 11)
 LABELS.update({k: "PAN" for k in list(DEFAULTS) + list(NEW) if k.endswith("_pan")})
 # SETUP's on/off keys (skin_post.py draws them): key -> (caption, w, h).
-BIG_KEYS = {"learn": ("PAD LEARN", 400, 90)}
+BIG_KEYS = {"learn": ("PAD LEARN", 400, 70), "midi_learn": ("MIDI LEARN", 400, 70)}
 BIG_KEYS.update({k: (TOGGLE_CAPTIONS.get(k, name.upper()), 240, 80) for k, name, _ in TOGGLES})
 
 
@@ -138,9 +138,14 @@ def params():
     out.append({"key": "pads_info", "name": "Pads", "min": 0, "max": 1, "display": "string", "type": "readout"})
     out += [knob(k, d) for k, d in NEW.items()]
     out += [{"key": k, "name": name, "options": opts, "default": d} for k, name, opts, d, _ in SWITCHES]
-    # Last: the hit dots, set by the engine (it reports them; nothing else does).
+    # The hit dots, set by the engine (it reports them; nothing else does).
     out += [{"key": k, "name": "%s Hit" % k[4:].upper(), "min": 0, "max": 1, "default": 0, "display": "int"}
             for k in ACTS]
+    # MIDI LEARN (SETUP's MIDI section).
+    out.append({"key": "midi_learn", "name": "MIDI Learn", "options": ["Off", "On"], "default": 0})
+    out.append({"key": "midi_clear", "name": "Clear MIDI", "min": 0, "max": 1, "momentary": True, "hold_ms": 120})
+    out.append({"key": "midi_clear_all", "name": "Clear All MIDI", "min": 0, "max": 1, "momentary": True, "hold_ms": 120})
+    out.append({"key": "midi_info", "name": "MIDI", "min": 0, "max": 1, "display": "string", "type": "readout"})
     mix = [k for _, keys in MIX for k in keys]
     sound = [k for _, keys in MACHINE for k in keys]
     missing = set(DEFAULTS) | set(NEW)
@@ -151,7 +156,7 @@ def params():
         {"label": "Sound", "keys": sound},
         {"label": "Mix", "keys": mix},
         {"label": "Setup", "keys": ["velocity"] + [k for k, _, _ in TOGGLES] + [k for k, *_ in SWITCHES]
-         + ["learn", "pads_clear", "pads_info"]},
+         + ["learn", "pads_clear", "pads_info", "midi_learn", "midi_clear", "midi_clear_all", "midi_info"]},
     ]
     return {"name": NAME, "params": out, "sections": sections}
 
@@ -203,21 +208,31 @@ def layout():
     w("[tab SETUP]")
     w("# PAD LEARN: tap it, then hit the pads you want for %s." % PADS_NOTE)
     w("# CLEAR PADS goes back to General MIDI drum notes.")
-    w("frame   x=16 y=96 w=1248 h=300 title=\"PADS\"")
-    w("toggle  cx=400 cy=230 label=\"PAD LEARN\" key=learn bw=400")
-    w("button  cx=880 cy=230 w=400 h=90 label=\"CLEAR PADS\" key=pads_clear")
-    w("readout cx=640 cy=330 w=1180 h=52 label=\"\" key=pads_info tsize=19 tcolor=%s" % PADS_READOUT_INK)
-    w("frame   x=16 y=412 w=1248 h=296 title=\"EXTRAS\"")
-    w("knob    cx=200 cy=560 r=54 label=\"VELOCITY\" key=velocity bw=140 ns=20 vs=26")
+    w("frame   x=16 y=96 w=1248 h=196 title=\"PADS\"")
+    w("toggle  cx=400 cy=180 label=\"PAD LEARN\" key=learn bw=400")
+    w("button  cx=880 cy=180 w=400 h=70 label=\"CLEAR PADS\" key=pads_clear")
+    w("readout cx=640 cy=257 w=1180 h=46 label=\"\" key=pads_info tsize=19 tcolor=%s" % PADS_READOUT_INK)
+    w("# MIDI LEARN: tap it (it stays lit), nudge a knob or fader on MACHINE or MIX,")
+    w("# then move a control on the MIDI controller: that CC, on that channel, now")
+    w("# moves it. Nudge another, or tap MIDI LEARN again to finish. CLEAR forgets")
+    w("# the control nudged or learned last, CLEAR ALL every mapping. Mappings are")
+    w("# saved with the project.")
+    w("frame   x=16 y=300 w=1248 h=196 title=\"MIDI\"")
+    w("toggle  cx=400 cy=384 label=\"MIDI LEARN\" key=midi_learn bw=400")
+    w("button  cx=790 cy=384 w=300 h=70 label=\"CLEAR\" key=midi_clear")
+    w("button  cx=1100 cy=384 w=300 h=70 label=\"CLEAR ALL\" key=midi_clear_all")
+    w("readout cx=640 cy=461 w=1180 h=46 label=\"\" key=midi_info tsize=19 tcolor=%s" % PADS_READOUT_INK)
+    w("frame   x=16 y=504 w=1248 h=204 title=\"EXTRAS\"")
+    w("knob    cx=200 cy=594 r=44 label=\"VELOCITY\" key=velocity bw=140 ns=20 vs=26")
     w("# The on/off extras (skin/skin_post.py draws them as keys).")
     for i, (k, _, _) in enumerate(TOGGLES):
-        w("toggle  cx=%d cy=560 label=\"%s\" key=%s bw=240" % (520 + 300 * i, BIG_KEYS[k][0], k))
+        w("toggle  cx=%d cy=604 label=\"%s\" key=%s bw=240" % (520 + 300 * i, BIG_KEYS[k][0], k))
     # The switches after them (skin_post.py draws the options as keys and the
     # caption over them).
     x = 520 + 300 * len(TOGGLES) - 120 + 40   # 40 px right of the last toggle key
     for k, _, opts, _, caption in SWITCHES:
         width = len(opts) * (SWITCH_W + 2) - 2
-        w("enum_h  cx=%d cy=560 sw=%d sh=80 label=\"%s\" key=%s options=%s"
+        w("enum_h  cx=%d cy=604 sw=%d sh=80 label=\"%s\" key=%s options=%s"
           % (x + width // 2, SWITCH_W, caption, k, ",".join(opts)))
         x += width + 40
     return "\n".join(L) + "\n"

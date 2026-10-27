@@ -356,6 +356,77 @@ void testAdapter(const fs::path& root)
         e->destroy(h);
     }
 
+    // MIDI LEARN: a nudge picks a control (its value stays), the next CC maps
+    // to it on that channel; mapped CCs move it; the mapping is saved with
+    // the project; CLEAR and CLEAR ALL forget.
+    {
+        void* m = e->create(nullptr);
+        char changed[64];
+        const auto drain = [&](void* i, const std::string& want) {
+            bool seen = false;
+            while (mpc_engine_changed(i, changed, sizeof changed))
+                seen = seen || want == changed;
+            return seen;
+        };
+        const auto cc = [&](void* i, int channel, int number, int value) {
+            const std::uint8_t msg[3] = { static_cast<std::uint8_t>(0xB0 | channel), static_cast<std::uint8_t>(number),
+                                          static_cast<std::uint8_t>(value) };
+            e->midi(i, msg, 3);
+        };
+        CHECK(get(e, m, "midi_info").rfind("MIDI: NOTHING MAPPED", 0) == 0);
+        e->set_param(m, "sd_snappy", "40");
+        e->set_param(m, "midi_learn", "1");
+        CHECK(get(e, m, "midi_info").rfind("MIDI LEARN: NUDGE", 0) == 0);
+        e->set_param(m, "sd_snappy", "45");   // the nudge
+        CHECK(get(e, m, "sd_snappy") == "40.0000");
+        CHECK(get(e, m, "sd_snappy_display") == "LEARN");
+        CHECK(drain(m, "sd_snappy"));   // the screen puts the knob back
+        CHECK(get(e, m, "midi_info").rfind("SD SNAPPY: MOVE A CONTROL", 0) == 0);
+        cc(m, 1, 21, 127);   // channel 2
+        CHECK(get(e, m, "sd_snappy") == "100.0000");
+        CHECK(get(e, m, "sd_snappy_display") == "CC21 CH2");
+        CHECK(get(e, m, "midi_info").rfind("SD SNAPPY = CC21 CH2", 0) == 0);
+        CHECK(drain(m, "sd_snappy"));
+        cc(m, 0, 21, 0);     // the same CC on channel 1: not ours
+        CHECK(get(e, m, "sd_snappy") == "100.0000");
+        cc(m, 1, 21, 0);
+        CHECK(get(e, m, "sd_snappy") == "0.0000");
+        cc(m, 1, 121, 0);    // a channel mode message is never learned
+        e->set_param(m, "midi_learn", "0");
+        CHECK(get(e, m, "sd_snappy_display") == "0.0");
+        CHECK(get(e, m, "midi_info") == "MIDI: 1 CONTROL MAPPED  SD SNAPPY CC21 CH2");
+        e->set_param(m, "sd_snappy", "70");   // out of learn mode a touch is a touch
+        CHECK(get(e, m, "sd_snappy") == "70.0000");
+
+        // Saved with the project; a new track starts with none.
+        const auto saved = get(e, m, "state");
+        CHECK(saved.find(";midimap=1.21.sd_snappy") != std::string::npos);
+        void* n = e->create(nullptr);
+        CHECK(get(e, n, "midi_info").rfind("MIDI: NOTHING MAPPED", 0) == 0);
+        e->set_param(n, "state", saved.c_str());
+        cc(n, 1, 21, 127);
+        CHECK(get(e, n, "sd_snappy") == "100.0000");
+
+        // Learning the same CC for another control moves it there.
+        e->set_param(n, "midi_learn", "1");
+        e->set_param(n, "bd_decay", "51");
+        cc(n, 1, 21, 64);
+        CHECK(get(e, n, "bd_decay_display") == "CC21 CH2" && get(e, n, "sd_snappy_display") != "CC21 CH2");
+        // A second CC for a control replaces its first.
+        e->set_param(n, "bd_decay", "52");
+        cc(n, 1, 22, 64);
+        e->set_param(n, "midi_learn", "0");
+        CHECK(get(e, n, "midi_info") == "MIDI: 1 CONTROL MAPPED  BD DECAY CC22 CH2");
+        // CLEAR forgets the control learned last; CLEAR ALL every mapping.
+        e->set_param(n, "midi_clear", "1");
+        CHECK(get(e, n, "midi_info").rfind("MIDI: NOTHING MAPPED", 0) == 0);
+        e->set_param(n, "state", saved.c_str());
+        e->set_param(n, "midi_clear_all", "1");
+        CHECK(get(e, n, "midi_info").rfind("MIDI: NOTHING MAPPED", 0) == 0);
+        e->destroy(n);
+        e->destroy(m);
+    }
+
     // STOP twice stops all sound; once lets it ring.
     e->set_param(inst, "cy_decay", "100");
     const std::uint8_t cy[3] = { 0x90, 49, 127 };

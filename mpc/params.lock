@@ -51,3 +51,7 @@ act_cb
 act_cy
 act_oh
 act_ch
+midi_learn
+midi_clear
+midi_clear_all
+midi_info
