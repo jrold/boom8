@@ -236,187 +236,163 @@
    "type": "readout"
   },
   {
-   "key": "hit_bd",
-   "name": "Play Bass Drum",
+   "key": "sd_decay",
+   "name": "SD Decay",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_sd",
-   "name": "Play Snare Drum",
+   "key": "cp_decay",
+   "name": "CP Decay",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_lt",
-   "name": "Play Low Tom",
+   "key": "bd_pan",
+   "name": "BD Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_mt",
-   "name": "Play Mid Tom",
+   "key": "sd_pan",
+   "name": "SD Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_ht",
-   "name": "Play Hi Tom",
+   "key": "lt_pan",
+   "name": "LT Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_rs",
-   "name": "Play Rim Shot",
+   "key": "mt_pan",
+   "name": "MT Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_cp",
-   "name": "Play Hand Clap",
+   "key": "ht_pan",
+   "name": "HT Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_cb",
-   "name": "Play Cowbell",
+   "key": "rs_pan",
+   "name": "RS Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_cy",
-   "name": "Play Cymbal",
+   "key": "cp_pan",
+   "name": "CP Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_oh",
-   "name": "Play Open Hat",
+   "key": "cb_pan",
+   "name": "CB Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_ch",
-   "name": "Play Closed Hat",
+   "key": "cy_pan",
+   "name": "CY Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_lc",
-   "name": "Play Low Conga",
+   "key": "oh_pan",
+   "name": "OH Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   },
   {
-   "key": "hit_mc",
-   "name": "Play Mid Conga",
+   "key": "ch_pan",
+   "name": "CH Pan",
    "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
-  },
-  {
-   "key": "hit_hc",
-   "name": "Play Hi Conga",
-   "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
-  },
-  {
-   "key": "hit_cl",
-   "name": "Play Claves",
-   "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
-  },
-  {
-   "key": "hit_ma",
-   "name": "Play Maracas",
-   "min": 0,
-   "max": 1,
-   "momentary": true,
-   "hold_ms": 60
+   "max": 100,
+   "default": 50,
+   "dynamic_display": true
   }
  ],
  "sections": [
   {
-   "label": "Drums",
+   "label": "Sound",
    "keys": [
     "accent",
-    "bd_level",
+    "bd_tune",
     "bd_tone",
     "bd_decay",
-    "sd_level",
     "sd_tone",
     "sd_snappy",
-    "lt_level",
+    "sd_decay",
     "lt_tuning",
-    "mt_level",
     "mt_tuning",
-    "ht_level",
     "ht_tuning",
-    "bd_tune"
-   ]
-  },
-  {
-   "label": "Percussion",
-   "keys": [
-    "rs_level",
-    "cp_level",
-    "cb_level"
-   ]
-  },
-  {
-   "label": "Metal",
-   "keys": [
-    "cy_level",
+    "cp_decay",
     "cy_tone",
     "cy_decay",
-    "oh_level",
-    "oh_decay",
-    "ch_level",
-    "choke"
+    "oh_decay"
    ]
   },
   {
-   "label": "Master",
+   "label": "Mix",
    "keys": [
-    "volume",
-    "accent",
-    "velocity",
-    "bd_tune",
-    "choke"
+    "bd_level",
+    "bd_pan",
+    "sd_level",
+    "sd_pan",
+    "lt_level",
+    "lt_pan",
+    "mt_level",
+    "mt_pan",
+    "ht_level",
+    "ht_pan",
+    "rs_level",
+    "rs_pan",
+    "cp_level",
+    "cp_pan",
+    "cb_level",
+    "cb_pan",
+    "cy_level",
+    "cy_pan",
+    "oh_level",
+    "oh_pan",
+    "ch_level",
+    "ch_pan",
+    "volume"
    ]
   },
   {
    "label": "Setup",
    "keys": [
+    "velocity",
+    "choke",
     "learn",
     "pads_clear",
     "pads_info"

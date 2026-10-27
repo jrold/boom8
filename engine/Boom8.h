@@ -13,7 +13,7 @@
 //
 // One instance is one machine. A new hit restarts its voice, as on the
 // hardware. Not thread-safe: the owner calls everything from one thread at a
-// time. 44.1 kHz, mono (the same on both outputs).
+// time. 44.1 kHz, stereo: each instrument has its own pan.
 
 #include <array>
 #include <cstdint>
@@ -61,6 +61,12 @@ struct Controls
     float chLevel = 65.0f;
 
     // Not on the hardware.
+    // Pan per instrument, 0 = left, 50 = centre, 100 = right (a tom's conga,
+    // the rim shot's claves and the clap's maracas share its pan).
+    float bdPan = 50.0f, sdPan = 50.0f, ltPan = 50.0f, mtPan = 50.0f, htPan = 50.0f, rsPan = 50.0f;
+    float cpPan = 50.0f, cbPan = 50.0f, cyPan = 50.0f, ohPan = 50.0f, chPan = 50.0f;
+    // SD and CP DECAY: 50 is the hardware's length; lower tightens, higher lengthens.
+    float sdDecay = 50.0f, cpDecay = 50.0f;
     float velocity = 40.0f;   // how much pad velocity changes the level, 0..100
     float bdTune = 0.0f;      // bass drum pitch, semitones (-12..+12)
     bool choke = true;        // the closed hat cuts the open hat (always, on the hardware)
@@ -92,6 +98,7 @@ public:
     static float cyDecaySeconds(float decay);
     static float ohDecaySeconds(float decay);
     static float accentGain(float accent);            // an accented hit's extra gain
+    static float lengthScale(float decay);            // SD / CP DECAY: how much longer, 1 = the hardware
 
 private:
     struct Svf   // TPT state-variable filter (Zavalishin)
@@ -119,6 +126,8 @@ private:
         bool active = false;
         double t = 0.0;            // seconds since the hit
         float gain = 1.0f;         // level, velocity and accent
+        float panL = 1.0f, panR = 1.0f;
+        float length = 1.0f;       // the clap's tail, as lengthScale
         float release = 1.0f;      // choke and panic fade, 1 = none
         float releaseStep = 0.0f;
         double phase1 = 0.0, phase2 = 0.0;
@@ -133,6 +142,7 @@ private:
     };
 
     float renderVoice(int voice, State& s, const std::array<float, 6>& metal);
+    float panOf(int voice) const;
     float noise();
 
     std::array<State, voiceCount> voices {};

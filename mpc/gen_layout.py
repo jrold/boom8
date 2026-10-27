@@ -2,113 +2,180 @@
 control sits on the MPC's screen. Run it after changing either:
 
     python3 gen_layout.py
+
+The BOOM machines share this file's code; the MACHINE block at the top is
+what makes this one BOOM8.
 """
 import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# Knob columns of the main page, left to right, as on the hardware's panel.
-COLS = [
-    ("ACCENT", [("accent", "LEVEL")]),
-    ("BD", [("bd_level", "LEVEL"), ("bd_tone", "TONE"), ("bd_decay", "DECAY")]),
-    ("SD", [("sd_level", "LEVEL"), ("sd_tone", "TONE"), ("sd_snappy", "SNAPPY")]),
-    ("LT", [("lt_level", "LEVEL"), ("lt_tuning", "TUNING")]),
-    ("MT", [("mt_level", "LEVEL"), ("mt_tuning", "TUNING")]),
-    ("HT", [("ht_level", "LEVEL"), ("ht_tuning", "TUNING")]),
-    ("RS", [("rs_level", "LEVEL")]),
-    ("CP", [("cp_level", "LEVEL")]),
-    ("CB", [("cb_level", "LEVEL")]),
-    ("CY", [("cy_level", "LEVEL"), ("cy_tone", "TONE"), ("cy_decay", "DECAY")]),
-    ("OH", [("oh_level", "LEVEL"), ("oh_decay", "DECAY")]),
-    ("CH", [("ch_level", "LEVEL")]),
-    ("VOLUME", [("volume", "MASTER")]),
+# ---------------------------------------------------------------- MACHINE
+
+NAME = "BOOM8"
+PLATE_LINES = ("ALL", "ANALOG", "", "16", "VOICES")   # small print on the name plate
+
+# Two pages of columns, one per instrument, as the hardware's panel reads:
+# each column's abbreviation is its heading (a tom's column also sets its
+# conga, the rim shot's the claves, the clap's the maracas, as on the
+# hardware). MACHINE: the sound knobs top to bottom; the first column also
+# carries the name plate. MIX: a LEVEL fader per instrument with its PAN knob
+# under it, and the MASTER fader with the name plate under it.
+MACHINE = [
+    ("AC", ["accent"]),
+    ("BD", ["bd_tune", "bd_tone", "bd_decay"]),
+    ("SD", ["sd_tone", "sd_snappy", "sd_decay"]),
+    ("LT\u00b7LC", ["lt_tuning"]),
+    ("MT\u00b7MC", ["mt_tuning"]),
+    ("HT\u00b7HC", ["ht_tuning"]),
+    ("CP\u00b7MA", ["cp_decay"]),
+    ("CY", ["cy_tone", "cy_decay"]),
+    ("OH", ["oh_decay"]),
 ]
-COL_X0, COL_W = 16, 96          # skin_post.py draws the column headings from these
-ROWS = [199, 333, 467]
-KEY_X0, KEY_PITCH, KEY_CY, KEY_W, KEY_H = 16, 78, 620, 72, 76
+MIX = [
+    ("BD", ["bd_level", "bd_pan"]),
+    ("SD", ["sd_level", "sd_pan"]),
+    ("LT\u00b7LC", ["lt_level", "lt_pan"]),
+    ("MT\u00b7MC", ["mt_level", "mt_pan"]),
+    ("HT\u00b7HC", ["ht_level", "ht_pan"]),
+    ("RS\u00b7CL", ["rs_level", "rs_pan"]),
+    ("CP\u00b7MA", ["cp_level", "cp_pan"]),
+    ("CB", ["cb_level", "cb_pan"]),
+    ("CY", ["cy_level", "cy_pan"]),
+    ("OH", ["oh_level", "oh_pan"]),
+    ("CH", ["ch_level", "ch_pan"]),
+    ("MST", ["volume"]),
+]
 
-VOICES = ["bd", "sd", "lt", "mt", "ht", "rs", "cp", "cb", "cy", "oh", "ch", "lc", "mc", "hc", "cl", "ma"]
-NAMES = {"bd": "Bass Drum", "sd": "Snare Drum", "lt": "Low Tom", "mt": "Mid Tom", "ht": "Hi Tom", "rs": "Rim Shot",
-         "cp": "Hand Clap", "cb": "Cowbell", "cy": "Cymbal", "oh": "Open Hat", "ch": "Closed Hat", "lc": "Low Conga",
-         "mc": "Mid Conga", "hc": "Hi Conga", "cl": "Claves", "ma": "Maracas"}
-
-# The defaults: engine/Boom8.h Controls.
+# The knobs and faders, in params.json order (it never changes once
+# released; params.lock checks), and their defaults: engine/Boom8.h Controls.
 DEFAULTS = dict(accent=60, volume=0, bd_level=80, bd_tone=45, bd_decay=55, sd_level=70, sd_tone=50, sd_snappy=60,
                 lt_level=70, lt_tuning=50, mt_level=70, mt_tuning=50, ht_level=70, ht_tuning=50, rs_level=70,
                 cp_level=70, cb_level=60, cy_level=60, cy_tone=50, cy_decay=60, oh_level=65, oh_decay=40,
                 ch_level=65, velocity=40, bd_tune=0)
+TOGGLES = [("choke", "Hat Choke", 1)]   # key, name, default: on SETUP
+# Added after the first release, after the others.
+NEW = dict(sd_decay=50, cp_decay=50, bd_pan=50, sd_pan=50, lt_pan=50, mt_pan=50, ht_pan=50, rs_pan=50, cp_pan=50,
+           cb_pan=50, cy_pan=50, oh_pan=50, ch_pan=50)
+RANGES = {"volume": (-24, 6), "bd_tune": (-12, 12)}   # any knob not 0..100
+
+# The labels painted under the knobs (the instrument is in the heading above);
+# a pan knob's is PAN.
+LABELS = dict(accent="ACCENT", bd_tune="TUNE", bd_tone="TONE", bd_decay="DECAY", sd_tone="TONE", sd_snappy="SNAPPY",
+              sd_decay="DECAY", lt_tuning="TUNING", mt_tuning="TUNING", ht_tuning="TUNING", cp_decay="DECAY",
+              cy_tone="TONE", cy_decay="DECAY", oh_decay="DECAY")
+# The names MPC shows (Q-Links, automation) where "BD Tune"-style won't do.
+PNAMES = dict(accent="Accent", volume="Volume", velocity="Velocity")
+TOGGLE_CAPTIONS = {}   # SETUP key captions, where not the name in capitals
+
+THEME = dict(theme_bg="2c2c2e", theme_ink="ece4ce", theme_ink_dim="968f80", theme_accent="ee7e22",
+             theme_accent_hi="f6c13a", theme_seg_active="ee7e22", theme_seg_inactive="2a2a2c",
+             theme_seg_active_tx="1c1c1e", theme_lcd="0e0e0f", theme_knob_dot="d63428", theme_btn_on="d63428")
+QLINKS_TRACK = "bd_tone,bd_decay,sd_tone,sd_snappy,sd_decay,cy_decay,bd_level,volume"
+PADS_NOTE = ("the sixteen sounds in the order BD, SD, LT, MT, HT, RS, CP, CB, CY, OH, CH, LC, MC, HC, CL, MA;"
+             " it finishes after the sixteenth")
+PADS_READOUT_INK = "f6c13a"
+
+# ---------------------------------------------------------------- end of MACHINE
+
+PAGES = {"MACHINE": MACHINE, "MIX": MIX}
+PLATE = {"MACHINE": (0, 331), "MIX": (len(MIX) - 1, 532)}   # page -> (column, top y) of the name plate
+X0, WIDTH = 16, 1248   # skin_post.py draws the headings from these
+ROWS = [195, 331, 467, 603]
+KNOB_R, KNOB_BW, VALUE_PX = 34, 100, 26
+FADER_CY, FADER_W, FADER_H = 300, 56, 300   # MIX: the faders, their pan knobs below
+PAN_CY = 560
+LABEL_GAP = 20   # px between a knob and its value, for the painted label
+LABELS.update({k: "PAN" for k in list(DEFAULTS) + list(NEW) if k.endswith("_pan")})
+# SETUP's on/off keys (skin_post.py draws them): key -> (caption, w, h).
+BIG_KEYS = {"learn": ("PAD LEARN", 400, 90)}
+BIG_KEYS.update({k: (TOGGLE_CAPTIONS.get(k, name.upper()), 240, 80) for k, name, _ in TOGGLES})
 
 
-def key_cx(i):
-    return KEY_X0 + KEY_PITCH // 2 + KEY_PITCH * i
+def col_w(page):
+    return WIDTH / len(PAGES[page])
+
+
+def col_cx(page, i):
+    return round(X0 + col_w(page) * (i + 0.5))
+
+
+def pname(k):
+    if k in PNAMES:
+        return PNAMES[k]
+    v, what = k.split("_")
+    return "%s %s" % (v.upper(), what.capitalize())
 
 
 def params():
-    names = dict(accent="Accent", volume="Volume", velocity="Velocity", bd_tune="BD Tune")
-    for v in VOICES[:11]:
-        for what in ("level", "tone", "decay", "snappy", "tuning"):
-            names["%s_%s" % (v, what)] = "%s %s" % (v.upper(), what.capitalize())
-    out = []
-    for k, d in DEFAULTS.items():
-        lo, hi = (-24, 6) if k == "volume" else (-12, 12) if k == "bd_tune" else (0, 100)
-        out.append({"key": k, "name": names[k], "min": lo, "max": hi, "default": d, "dynamic_display": True})
-    out.append({"key": "choke", "name": "Hat Choke", "options": ["Off", "On"], "default": 1})
+    def knob(k, d):
+        lo, hi = RANGES.get(k, (0, 100))
+        return {"key": k, "name": pname(k), "min": lo, "max": hi, "default": d, "dynamic_display": True}
+
+    out = [knob(k, d) for k, d in DEFAULTS.items()]
+    out += [{"key": k, "name": name, "options": ["Off", "On"], "default": d} for k, name, d in TOGGLES]
     out.append({"key": "learn", "name": "Pad Learn", "options": ["Off", "On"], "default": 0})
     out.append({"key": "pads_clear", "name": "Clear Pads", "min": 0, "max": 1, "momentary": True, "hold_ms": 120})
     out.append({"key": "pads_info", "name": "Pads", "min": 0, "max": 1, "display": "string", "type": "readout"})
-    for v in VOICES:
-        out.append({"key": "hit_" + v, "name": "Play " + NAMES[v], "min": 0, "max": 1, "momentary": True, "hold_ms": 60})
+    out += [knob(k, d) for k, d in NEW.items()]
+    mix = [k for _, keys in MIX for k in keys]
+    sound = [k for _, keys in MACHINE for k in keys]
+    missing = set(DEFAULTS) | set(NEW)
+    missing -= set(sound) | set(mix) | {"velocity"}
+    if missing:
+        raise SystemExit("gen_layout: on no page: %s" % ", ".join(sorted(missing)))
     sections = [
-        {"label": "Drums", "keys": ["accent"] + [k for k in DEFAULTS if k[:2] in ("bd", "sd", "lt", "mt", "ht")]},
-        {"label": "Percussion", "keys": [k for k in DEFAULTS if k[:2] in ("rs", "cp", "cb")]},
-        {"label": "Metal", "keys": [k for k in DEFAULTS if k[:2] in ("cy", "oh", "ch")] + ["choke"]},
-        {"label": "Master", "keys": ["volume", "accent", "velocity", "bd_tune", "choke"]},
-        {"label": "Setup", "keys": ["learn", "pads_clear", "pads_info"]},
+        {"label": "Sound", "keys": sound},
+        {"label": "Mix", "keys": mix},
+        {"label": "Setup", "keys": ["velocity"] + [k for k, _, _ in TOGGLES] + ["learn", "pads_clear", "pads_info"]},
     ]
-    return {"name": "BOOM8", "params": out, "sections": sections}
+    return {"name": NAME, "params": out, "sections": sections}
 
 
 def layout():
     L = []
     w = L.append
-    w("# BOOM8 for MPC OS touchscreens (MPC Live III and other 1280x800 units).")
+    w("# %s for MPC OS touchscreens (MPC Live III and other 1280x800 units)." % NAME)
     w("# Plugin area: x 0..1280, y 86..714 (tools/shadow_skin.py). Written by")
     w("# gen_layout.py; skin/skin_post.py paints the panel round these controls.")
-    for k, v in dict(theme_bg="1c1c1e", theme_ink="f1ead8", theme_ink_dim="b9b1a0", theme_accent="f08a24",
-                     theme_accent_hi="f6c13a", theme_seg_active="f08a24", theme_seg_inactive="2a2a2c",
-                     theme_seg_active_tx="1c1c1e", theme_lcd="0e0e0f", theme_knob_dot="e8402a",
-                     theme_btn_on="e8402a").items():
+    for k, v in THEME.items():
         w("%s=%s" % (k, v))
-    w("qlinks_track = bd_level,bd_tone,bd_decay,sd_tone,sd_snappy,cy_decay,oh_decay,volume")
+    # The track's Q-Links. No per-page banks: MPC shows a page with banks as
+    # dots under its tab and names the tab after the chosen bank.
+    w("qlinks_track = %s" % QLINKS_TRACK)
     w("")
+    # ns=0: MPC draws control names small whatever size the skin asks for, so
+    # skin_post.py paints the labels into the panel; vy= leaves them room.
+    knob = "knob    cx=%d cy=%d r=%d label=\"%s\" key=%s bw=%d ns=0 vs=%d vy=%d"
     w("[tab MACHINE]")
-    w("# Thirteen columns as on the hardware's panel: ACCENT, the eleven instruments")
-    w("# (the tom, rim shot and clap columns also set the congas, claves and")
-    w("# maracas), and the master VOLUME. The keys below play the sixteen sounds.")
-    for i, (_, knobs) in enumerate(COLS):
-        cx = COL_X0 + COL_W // 2 + COL_W * i
-        for (key, label), cy in zip(knobs, ROWS):
-            w("knob    cx=%d cy=%d r=32 label=\"%s\" key=%s bw=92 ns=14 vs=18" % (cx, cy, label, key))
-    for i, v in enumerate(VOICES):
-        w("button  cx=%d cy=%d w=%d h=%d label=\"%s\" key=hit_%s" % (key_cx(i), KEY_CY, KEY_W, KEY_H, v.upper(), v))
-    w("qlinks \"DRUMS\" = bd_level,bd_tone,bd_decay,sd_level,sd_tone,sd_snappy,accent,volume")
-    w("qlinks \"TOMS\" = lt_level,lt_tuning,mt_level,mt_tuning,ht_level,ht_tuning,rs_level,cp_level")
-    w("qlinks \"METAL\" = cb_level,cy_level,cy_tone,cy_decay,oh_level,oh_decay,ch_level,volume")
+    w("# A column per instrument with its sound knobs top to bottom. The levels")
+    w("# are on MIX; the pads play the sounds.")
+    for i, (_, keys) in enumerate(MACHINE):
+        for key, cy in zip(keys, ROWS):
+            w(knob % (col_cx("MACHINE", i), cy, KNOB_R, LABELS[key], key, KNOB_BW, VALUE_PX, LABEL_GAP))
+    w("")
+    w("[tab MIX]")
+    w("# A LEVEL fader and a PAN knob per instrument, and the MASTER fader.")
+    for i, (_, keys) in enumerate(MIX):
+        cx = col_cx("MIX", i)
+        w("slider_v cx=%d cy=%d w=%d h=%d label=\"\" key=%s bw=%d ns=0 vs=%d"
+          % (cx, FADER_CY, FADER_W, FADER_H, keys[0], KNOB_BW, VALUE_PX))
+        if len(keys) > 1:
+            w(knob % (cx, PAN_CY, KNOB_R, LABELS[keys[1]], keys[1], KNOB_BW, VALUE_PX, LABEL_GAP))
     w("")
     w("[tab SETUP]")
-    w("# PAD LEARN: tap it, then hit the pads you want for the sixteen sounds in the")
-    w("# order of the instrument keys (BD to MA); it finishes after the sixteenth.")
+    w("# PAD LEARN: tap it, then hit the pads you want for %s." % PADS_NOTE)
     w("# CLEAR PADS goes back to General MIDI drum notes.")
     w("frame   x=16 y=96 w=1248 h=300 title=\"PADS\"")
     w("toggle  cx=400 cy=230 label=\"PAD LEARN\" key=learn bw=400")
     w("button  cx=880 cy=230 w=400 h=90 label=\"CLEAR PADS\" key=pads_clear")
-    w("readout cx=640 cy=330 w=1180 h=52 label=\"\" key=pads_info tsize=19 tcolor=f6c13a")
+    w("readout cx=640 cy=330 w=1180 h=52 label=\"\" key=pads_info tsize=19 tcolor=%s" % PADS_READOUT_INK)
     w("frame   x=16 y=412 w=1248 h=296 title=\"EXTRAS\"")
     w("knob    cx=200 cy=560 r=54 label=\"VELOCITY\" key=velocity bw=140 ns=20 vs=26")
-    w("knob    cx=420 cy=560 r=54 label=\"BD TUNE\" key=bd_tune bw=140 ns=20 vs=26")
-    w("# HAT CHOKE: the closed hat cuts the open hat (skin/skin_post.py draws the key).")
-    w("toggle  cx=700 cy=560 label=\"HAT CHOKE\" key=choke bw=240")
+    w("# The on/off extras (skin/skin_post.py draws them as keys).")
+    for i, (k, _, _) in enumerate(TOGGLES):
+        w("toggle  cx=%d cy=560 label=\"%s\" key=%s bw=240" % (520 + 300 * i, BIG_KEYS[k][0], k))
     return "\n".join(L) + "\n"
 
 

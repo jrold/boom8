@@ -81,6 +81,14 @@ float sine(const double phase)
     return static_cast<float>(std::sin(2.0 * kPi * phase));
 }
 
+// The output stage: clean until it nears full scale, then soft.
+float outputStage(const float y)
+{
+    if (std::abs(y) <= 0.8f)
+        return y;
+    return std::copysign(0.8f + 0.2f * std::tanh((std::abs(y) - 0.8f) / 0.2f), y);
+}
+
 void advance(double& phase, const double hz)
 {
     phase += hz * dt;
@@ -176,6 +184,37 @@ float Boom8::ohDecaySeconds(const float decay)
     return expMap(unit(decay), 0.04f, 0.26f);
 }
 
+float Boom8::lengthScale(const float decay)
+{
+    const float d = unit(decay);
+    return d < 0.5f ? expMap(d * 2.0f, 0.25f, 1.0f) : expMap(d * 2.0f - 1.0f, 1.0f, 1.8f);
+}
+
+float Boom8::panOf(const int voice) const
+{
+    const auto& c = controls;
+    switch (voice)
+    {
+    case BD: return c.bdPan;
+    case SD: return c.sdPan;
+    case LT:
+    case LC: return c.ltPan;
+    case MT:
+    case MC: return c.mtPan;
+    case HT:
+    case HC: return c.htPan;
+    case RS:
+    case CL: return c.rsPan;
+    case CP:
+    case MA: return c.cpPan;
+    case CB: return c.cbPan;
+    case CY: return c.cyPan;
+    case OH: return c.ohPan;
+    case CH: return c.chPan;
+    default: return 50.0f;
+    }
+}
+
 float Boom8::accentGain(const float accent)
 {
     return 1.0f + unit(accent);   // up to +6 dB
@@ -213,6 +252,11 @@ void Boom8::trigger(const int voice, const int velocity)
         s.gain *= accentGain(c.accent);
     // A harder trigger pulse bends a drum's pitch further.
     const float strike = accented ? 1.0f + 0.5f * unit(c.accent) : 1.0f;
+    // Pan: the balance law, so a centred voice is as loud as before and a
+    // hard-panned one keeps its level on its side.
+    const float pan = unit(panOf(voice));
+    s.panL = std::min(1.0f, 2.0f * (1.0f - pan));
+    s.panR = std::min(1.0f, 2.0f * pan);
 
     switch (voice)
     {
@@ -230,19 +274,22 @@ void Boom8::trigger(const int voice, const int velocity)
         s.p1.lowpass(expMap(s.mix, 220.0f, 5200.0f));
         break;
     case SD:
+    {
         s.gain *= levelGain(c.sdLevel);
         s.freq1 = 180.0f;
         s.freq2 = 330.0f;
         s.bend = 0.05f * strike;
         s.env1 = s.env2 = s.env3 = 1.0f;
-        s.coef1 = decayFor(0.050f);
-        s.coef2 = decayFor(0.034f);
-        s.coef3 = decayFor(0.072f);    // the snares
+        const float length = lengthScale(c.sdDecay);
+        s.coef1 = decayFor(0.050f * length);
+        s.coef2 = decayFor(0.034f * length);
+        s.coef3 = decayFor(0.072f * length);   // the snares
         s.mix = unit(c.sdTone);
         s.f1.set(1800.0f, 0.7f);
         s.p1.lowpass(expMap(s.mix, 3800.0f, 11000.0f));
-        s.p2.a = unit(c.sdSnappy);      // (the snappy amount, kept here)
+        s.p2.a = unit(c.sdSnappy);              // (the snappy amount, kept here)
         break;
+    }
     case LT:
     case MT:
     case HT:
@@ -291,6 +338,7 @@ void Boom8::trigger(const int voice, const int velocity)
         break;
     case CP:
         s.gain *= levelGain(c.cpLevel);
+        s.length = lengthScale(c.cpDecay);
         s.f1.set(1000.0f, 1.3f);
         s.f2.set(1150.0f, 0.9f);       // the reverb tail's filter
         break;
@@ -456,10 +504,11 @@ float Boom8::renderVoice(const int voice, State& s, const std::array<float, 6>& 
             const double slot = std::fmod(t, 0.0105);
             claps = static_cast<float>(std::exp(-slot / 0.0028));
         }
-        const float tail = t >= 0.021 ? static_cast<float>(std::exp(-(t - 0.021) / 0.068)) * 0.85f : 0.0f;
+        const double tau = 0.068 * s.length;
+        const float tail = t >= 0.021 ? static_cast<float>(std::exp(-(t - 0.021) / tau)) * 0.85f : 0.0f;
         const float n = noise();
         out = std::tanh(2.2f * (s.f1.band(n) * claps * 1.8f + s.f2.band(n) * tail * 0.8f));
-        if (t > 0.6)
+        if (t > 0.021 + tau * 7.6)   // -66 dB
             s.active = false;
         break;
     }
@@ -548,16 +597,18 @@ void Boom8::render(float* left, float* right, const int frames)
             const double q = p + 0.5 - std::floor(p + 0.5);
             metal[m] = (p < 0.5 ? 1.0f : -1.0f) + blep(p, inc) - blep(q, inc);
         }
-        float mix = 0.0f;
+        float l = 0.0f, r = 0.0f;
         for (int v = 0; v < voiceCount; ++v)
-            if (voices[static_cast<std::size_t>(v)].active)
-                mix += renderVoice(v, voices[static_cast<std::size_t>(v)], metal);
-        // The output stage: clean until it nears full scale, then soft.
-        float y = mix * volume;
-        if (std::abs(y) > 0.8f)
-            y = std::copysign(0.8f + 0.2f * std::tanh((std::abs(y) - 0.8f) / 0.2f), y);
-        left[i] += y;
-        right[i] += y;
+        {
+            State& s = voices[static_cast<std::size_t>(v)];
+            if (!s.active)
+                continue;
+            const float x = renderVoice(v, s, metal);
+            l += x * s.panL;
+            r += x * s.panR;
+        }
+        left[i] += outputStage(l * volume);
+        right[i] += outputStage(r * volume);
     }
 }
 

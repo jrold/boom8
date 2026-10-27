@@ -1,4 +1,6 @@
-"""BOOM8 skin touch-ups, run by gen_vst.py after the skin is built:
+"""BOOM skin touch-ups, run by gen_vst.py after the skin is built (the same
+file in BOOM6, BOOM8 and BOOM9; each machine's own parts are in gen_layout.py
+and hardware.py's THEME):
 
     python3 skin/skin_post.py <skin dir>
 
@@ -8,11 +10,13 @@
    once but is a 51x27 pill. So the layout places toggles, and each one in
    KEYS becomes a key of that size: its own definition with key images,
    keeping the toggle's actions, placed around the toggle's centre.
-2. Knob values in warm yellow, names in cream (TUI.json label colours).
-3. The artwork, repainted as the rhythm machine's panel (hardware.py): the
-   MACHINE page's column headings and dividers, the instrument keys in their
-   four colours over a matching stripe, the knobs and value windows; the
-   SETUP page's sections. Geometry and bindings stay as generated.
+2. Knob and fader values and names in the THEME's colours (TUI.json label
+   colours).
+3. The artwork, repainted as the machine's panel (hardware.py): the MACHINE
+   and MIX pages with each instrument's abbreviation over a bar above its
+   column, the name plate, the knobs and faders, their painted labels and
+   value windows; the SETUP page's sections.
+   Geometry and bindings stay as generated.
 
 Needs Pillow, the Titillium Web fonts build.sh copies to build/fonts/, and
 mpc-vst-plugins' tools (layout parser, control geometry) in $MPC_VST or
@@ -39,30 +43,10 @@ W, H, Y_OFF = shadow_skin.W, shadow_skin.H, shadow_skin.Y_OFF
 SS = hw.SS
 TOGGLE_TOP = 18   # shadow_skin.py places a toggle at cy - 18
 
-# toggle key -> (caption, width, height)
-KEYS = {
-    "learn": ("PAD LEARN", 400, 90),
-    "choke": ("HAT CHOKE", 240, 80),
-}
+KEYS = gl.BIG_KEYS   # toggle key -> (caption, width, height)
 
-# The MACHINE page's column headings: abbreviation, full names.
-HEADINGS = [
-    ("AC", ["ACCENT"]),
-    ("BD", ["BASS DRUM"]),
-    ("SD", ["SNARE DRUM"]),
-    ("LT·LC", ["LOW TOM", "LOW CONGA"]),
-    ("MT·MC", ["MID TOM", "MID CONGA"]),
-    ("HT·HC", ["HI TOM", "HI CONGA"]),
-    ("RS·CL", ["RIM SHOT", "CLAVES"]),
-    ("CP·MA", ["HAND CLAP", "MARACAS"]),
-    ("CB", ["COWBELL"]),
-    ("CY", ["CYMBAL"]),
-    ("OH", ["OPEN HAT"]),
-    ("CH", ["CLOSED HAT"]),
-    ("VOL", ["MASTER"]),
-]
 HEAD_Y = 98          # top of the headings
-KNOBS_BOTTOM = 556   # where the knob section ends and the key section starts
+PANEL_BOTTOM = 708   # where the column rules end
 
 
 # ---------------------------------------------------------------- TUI.json
@@ -110,7 +94,7 @@ def big_keys(tui, params, save):
         new_key = "sfKey_%s" % name
         if new_key not in by_name:
             for lit in (False, True):
-                save(hw.key(w, h, caption, lit, hw.ORANGE if lit else hw.CREAM, led=True),
+                save(hw.key(w, h, caption, lit),
                      "sf_key_%s_%s.png" % (name, "on" if lit else "off"))
             value = copy.deepcopy(toggle["value"])
             focus = next(c for c in value["componentsData"] if c["componentData"]["type"] == "Focus")
@@ -144,12 +128,12 @@ def check_knob_strip(r, frame, frames):
 
 def colour_knob_labels(tui):
     for d in find_defs(tui):
-        if not d["key"].startswith("shKnob"):
+        if not d["key"].startswith(("shKnob", "shSlider")):
             continue
         labels = [c for c in d["value"]["componentsData"] if c["componentData"]["type"] == "Label"]
-        if len(labels) >= 2:   # name, then value
-            labels[-1]["componentData"]["data"]["textStyle"]["colour"] = "ff%02x%02x%02x" % hw.VALUE_INK
-            labels[0]["componentData"]["data"]["textStyle"]["colour"] = "ff%02x%02x%02x" % hw.INK
+        for label in labels:   # the name (unless painted into the panel), then the value
+            kind = label["componentData"]["data"].get("type")
+            label["componentData"]["data"]["textStyle"]["colour"] = "ff%02x%02x%02x" % (hw.VALUE_INK if kind == "Value" else hw.INK)
 
 
 # ---------------------------------------------------------------- artwork
@@ -163,35 +147,38 @@ def knob_value_box(w):
     vs = w.get("vs")
     value_h = 26 if vs is None else max(26, round(vs * 1.2))
     top = w["cy"] - s // 2
-    vy = top + (s // 2 + r + 2) + name_h + (2 if name_h else 0)
+    vy = top + (s // 2 + r + 2) + name_h + (2 if name_h else 0) + int(w.get("vy") or 0)
     bw = max(s, w.get("bw") or 130)
     return (w["cx"] - bw // 2 + 4, vy + 1, w["cx"] + bw // 2 - 4, vy + value_h - 1)
 
 
-def machine_page(bg):
-    """The knob section's headings and column rules, the stripe and step
-    numbers of the key section, and the name plate."""
-    for i, (abbrev, names) in enumerate(HEADINGS):
-        cx = gl.COL_X0 + gl.COL_W // 2 + gl.COL_W * i
-        colour = hw.ORANGE if i in (0, len(HEADINGS) - 1) else hw.INK
-        hw.heading(bg, cx, HEAD_Y - Y_OFF, abbrev, names, colour)
+def column_page(bg, name):
+    """MACHINE and MIX: each instrument's abbreviation over its column, rules
+    between the columns, and the name plate where gen_layout.PLATE says."""
+    columns, cw = gl.PAGES[name], gl.col_w(name)
+    for i, (title, _) in enumerate(columns):
+        x0, x1 = gl.X0 + cw * i, gl.X0 + cw * (i + 1)
+        hw.heading(bg, x0, x1, HEAD_Y - Y_OFF, title, colour=hw.bar_colour(i, len(columns)))
         if i:
-            x = gl.COL_X0 + gl.COL_W * i
-            hw.rule(bg, x, HEAD_Y - Y_OFF + 4, x, KNOBS_BOTTOM - Y_OFF - 8)
-    hw.rule(bg, gl.COL_X0, HEAD_Y - Y_OFF + 53, gl.COL_X0 + gl.COL_W * len(HEADINGS), HEAD_Y - Y_OFF + 53)
-    # The ACCENT and VOLUME columns are set apart, as on the hardware.
-    for x in (gl.COL_X0 + gl.COL_W, gl.COL_X0 + gl.COL_W * (len(HEADINGS) - 1)):
-        hw.rule(bg, x, HEAD_Y - Y_OFF + 4, x, KNOBS_BOTTOM - Y_OFF - 8, colour=hw.INK_DIM, width=2)
+            hw.rule(bg, x0, HEAD_Y - Y_OFF + 2, x0, PANEL_BOTTOM - Y_OFF)
+    col, top = gl.PLATE[name]
+    cx, y = gl.col_cx(name, col), top - Y_OFF
+    hw.label(bg, cx, y, gl.NAME, 25, hw.ACCENT, spacing=1)
+    hw.bar(bg, cx - 40, y + 22, cx + 40, y + 26, hw.ACCENT)
+    for j, line in enumerate(("RHYTHM", "MACHINE")):
+        hw.label(bg, cx, y + 44 + 18 * j, line, 13, hw.INK, spacing=3)
+    for j, line in enumerate(gl.PLATE_LINES):
+        if line:
+            hw.label(bg, cx, y + 104 + 15 * j, line, 11, hw.INK_DIM, spacing=2)
 
-    # Key section: a stripe in each group's colour over its four keys, step
-    # numbers under the keys, the name plate at the right of the numbers.
-    top = gl.KEY_CY - gl.KEY_H // 2 - 14 - Y_OFF
-    for g in range(4):
-        x0 = gl.key_cx(4 * g) - gl.KEY_W // 2
-        x1 = gl.key_cx(4 * g + 3) + gl.KEY_W // 2
-        hw.bar(bg, x0, top, x1, top + 6, hw.GROUP_COLOURS[g])
-    for i in range(16):
-        hw.label(bg, gl.key_cx(i), gl.KEY_CY + gl.KEY_H // 2 + 14 - Y_OFF, str(i + 1), 13, hw.INK_DIM)
+
+def slider_value_box(w):
+    """Where shadow_skin puts a slider's value text (layout coordinates; ns=0)."""
+    vs = w.get("vs")
+    value_h = 26 if vs is None else max(26, round(vs * 1.2))
+    top = w["cy"] + w["h"] // 2 + 2
+    bw = max(w["w"], w.get("bw") or 130)
+    return (w["cx"] - bw // 2 + 4, top + 1, w["cx"] + bw // 2 - 4, top + value_h - 1)
 
 
 def page(tab, t, params):
@@ -204,26 +191,23 @@ def page(tab, t, params):
     for w in widgets:
         if w["kind"] == "frame":
             hw.section(bg, box(w["x"], w["y"], w["x"] + w["w"], w["y"] + w["h"]), w.get("title"))
-    if t == 0:
-        machine_page(bg)
-        hw.label(bg, 1262, 702 - Y_OFF, "BOOM8  ANALOG RHYTHM MACHINE", 12, hw.ORANGE, anchor="rm", spacing=2)
+    if tab["name"] in gl.PAGES:
+        column_page(bg, tab["name"])
 
     for w in widgets:
         k = w["kind"]
         if k == "readout":
             hw.well(bg, box(w["cx"] - w["w"] // 2, w["cy"] - w["h"] // 2, w["cx"] + w["w"] // 2, w["cy"] + w["h"] // 2))
+        elif k == "slider_v":
+            hw.fader_base(bg, w["cx"], w["cy"] - Y_OFF, w["h"])
+            hw.well(bg, box(*slider_value_box(w)))
         elif k == "knob":
             hw.knob_base(bg, w["cx"], w["cy"] - Y_OFF, 2 * w["r"] + 10)
-            hw.well(bg, box(*knob_value_box(w)))
+            x0, y0, x1, y1 = knob_value_box(w)
+            hw.well(bg, box(x0, y0, x1, y1))
+            if w.get("ns") == 0 and w.get("label"):   # the name, painted (see gen_layout.py)
+                hw.label(bg, w["cx"], y0 - int(w.get("vy") or 0) / 2 - 1 - Y_OFF, w["label"], 15, hw.INK, spacing=1)
     return bg.resize((W, H), Image.Resampling.LANCZOS).convert("RGB")
-
-
-def key_colour(key):
-    """An instrument key's colour: the four groups of four, left to right."""
-    if key.startswith("hit_"):
-        i = gl.VOICES.index(key[4:])
-        return hw.GROUP_COLOURS[i // 4]
-    return hw.CREAM
 
 
 def main():
@@ -257,11 +241,17 @@ def main():
                 for path in paths:
                     bw, bh = Image.open(path).size
                     caption = w.get("label", "")
-                    colour = key_colour(w["key"])
-                    save(hw.key(bw, bh, caption, False, colour), os.path.basename(path))
-                    save(hw.key(bw, bh, caption, True, colour), os.path.basename(path)[:-len("_off.png")] + "_on.png")
+                    save(hw.key(bw, bh, caption, False, led=False), os.path.basename(path))
+                    save(hw.key(bw, bh, caption, True, led=False), os.path.basename(path)[:-len("_off.png")] + "_on.png")
             elif k == "knob":
                 knob_sizes.add(w["r"])
+
+    faders = glob.glob(os.path.join(pdir, "sh_slider_v_*.png"))
+    for path in faders:
+        strip = Image.open(path)
+        w = int(os.path.basename(path).split("_")[3].split("x")[0])
+        h = int(os.path.basename(path).split("_")[3].split("x")[1].split(".")[0])
+        save(hw.fader_strip(w, h, strip.height // h), os.path.basename(path))
 
     for path in glob.glob(os.path.join(pdir, "sh_tile_*_off.png")):
         tw, th = Image.open(path).size

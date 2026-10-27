@@ -37,8 +37,6 @@ constexpr int kMaxFrames = 128;                     // wrapper/engine.h: render(
 constexpr const char* kPadMapFile = "padmap.txt";   // the learned pads new tracks start with
 constexpr auto kDoubleStopWindow = std::chrono::milliseconds(1200);
 constexpr int kDebounceMs = 350;
-constexpr int kHitDebounceMs = 120;   // the screen's instrument keys: one hit per tap, but quick taps work
-constexpr int kKeyVelocity = 90;      // an instrument key hits this hard (not accented)
 
 // Voice keys and names, in voice order (the order PAD LEARN asks for them).
 constexpr std::array<const char*, voiceCount> kVoiceKey { "bd", "sd", "lt", "mt", "ht", "rs", "cp", "cb",
@@ -67,7 +65,7 @@ const std::map<int, int> kDefaultNotes {
 };
 
 // The knobs: key, the control, its range, and how the screen shows it.
-enum class Show { dial, dB, tuning, semitones, percent };
+enum class Show { dial, dB, level, pan, tuning, semitones, percent };
 struct Knob
 {
     const char* key;
@@ -79,27 +77,40 @@ struct Knob
 const Knob kKnobs[] = {
     { "accent", &Controls::accent, 0, 100, Show::dial, -1 },
     { "volume", &Controls::volume, -24, 6, Show::dB, -1 },
-    { "bd_level", &Controls::bdLevel, 0, 100, Show::dial, -1 },
+    { "bd_level", &Controls::bdLevel, 0, 100, Show::level, -1 },
     { "bd_tone", &Controls::bdTone, 0, 100, Show::dial, -1 },
     { "bd_decay", &Controls::bdDecay, 0, 100, Show::dial, -1 },
-    { "sd_level", &Controls::sdLevel, 0, 100, Show::dial, -1 },
+    { "sd_level", &Controls::sdLevel, 0, 100, Show::level, -1 },
     { "sd_tone", &Controls::sdTone, 0, 100, Show::dial, -1 },
     { "sd_snappy", &Controls::sdSnappy, 0, 100, Show::dial, -1 },
-    { "lt_level", &Controls::ltLevel, 0, 100, Show::dial, -1 },
+    { "sd_decay", &Controls::sdDecay, 0, 100, Show::dial, -1 },
+    { "lt_level", &Controls::ltLevel, 0, 100, Show::level, -1 },
     { "lt_tuning", &Controls::ltTuning, 0, 100, Show::tuning, LT },
-    { "mt_level", &Controls::mtLevel, 0, 100, Show::dial, -1 },
+    { "mt_level", &Controls::mtLevel, 0, 100, Show::level, -1 },
     { "mt_tuning", &Controls::mtTuning, 0, 100, Show::tuning, MT },
-    { "ht_level", &Controls::htLevel, 0, 100, Show::dial, -1 },
+    { "ht_level", &Controls::htLevel, 0, 100, Show::level, -1 },
     { "ht_tuning", &Controls::htTuning, 0, 100, Show::tuning, HT },
-    { "rs_level", &Controls::rsLevel, 0, 100, Show::dial, -1 },
-    { "cp_level", &Controls::cpLevel, 0, 100, Show::dial, -1 },
-    { "cb_level", &Controls::cbLevel, 0, 100, Show::dial, -1 },
-    { "cy_level", &Controls::cyLevel, 0, 100, Show::dial, -1 },
+    { "rs_level", &Controls::rsLevel, 0, 100, Show::level, -1 },
+    { "cp_level", &Controls::cpLevel, 0, 100, Show::level, -1 },
+    { "cp_decay", &Controls::cpDecay, 0, 100, Show::dial, -1 },
+    { "cb_level", &Controls::cbLevel, 0, 100, Show::level, -1 },
+    { "cy_level", &Controls::cyLevel, 0, 100, Show::level, -1 },
     { "cy_tone", &Controls::cyTone, 0, 100, Show::dial, -1 },
     { "cy_decay", &Controls::cyDecay, 0, 100, Show::dial, -1 },
-    { "oh_level", &Controls::ohLevel, 0, 100, Show::dial, -1 },
+    { "oh_level", &Controls::ohLevel, 0, 100, Show::level, -1 },
     { "oh_decay", &Controls::ohDecay, 0, 100, Show::dial, -1 },
-    { "ch_level", &Controls::chLevel, 0, 100, Show::dial, -1 },
+    { "ch_level", &Controls::chLevel, 0, 100, Show::level, -1 },
+    { "bd_pan", &Controls::bdPan, 0, 100, Show::pan, -1 },
+    { "sd_pan", &Controls::sdPan, 0, 100, Show::pan, -1 },
+    { "lt_pan", &Controls::ltPan, 0, 100, Show::pan, -1 },
+    { "mt_pan", &Controls::mtPan, 0, 100, Show::pan, -1 },
+    { "ht_pan", &Controls::htPan, 0, 100, Show::pan, -1 },
+    { "rs_pan", &Controls::rsPan, 0, 100, Show::pan, -1 },
+    { "cp_pan", &Controls::cpPan, 0, 100, Show::pan, -1 },
+    { "cb_pan", &Controls::cbPan, 0, 100, Show::pan, -1 },
+    { "cy_pan", &Controls::cyPan, 0, 100, Show::pan, -1 },
+    { "oh_pan", &Controls::ohPan, 0, 100, Show::pan, -1 },
+    { "ch_pan", &Controls::chPan, 0, 100, Show::pan, -1 },
     { "velocity", &Controls::velocity, 0, 100, Show::percent, -1 },
     { "bd_tune", &Controls::bdTune, -12, 12, Show::semitones, -1 },
 };
@@ -110,17 +121,6 @@ const Knob* findKnob(const std::string& key)
         if (key == k.key)
             return &k;
     return nullptr;
-}
-
-// "hit_sd" -> SD; -1 when it isn't an instrument key.
-int hitVoice(const std::string& key)
-{
-    if (key.rfind("hit_", 0) != 0)
-        return -1;
-    for (int v = 0; v < voiceCount; ++v)
-        if (key.compare(4, std::string::npos, kVoiceKey[static_cast<std::size_t>(v)]) == 0)
-            return v;
-    return -1;
 }
 
 enum ChangedKey : unsigned
@@ -262,12 +262,6 @@ public:
             }
             return;
         }
-        if (const int voice = hitVoice(k); voice >= 0)
-        {
-            if (v != 0 && !bouncing(k, kHitDebounceMs))
-                machine.trigger(voice, kKeyVelocity);
-            return;
-        }
         if (k == "learn")
         {
             setLearning(v != 0);
@@ -310,7 +304,7 @@ public:
 
         if (k == "choke") return num(c.choke);
         if (k == "learn") return num(learning);
-        if (k == "pads_clear" || hitVoice(k) >= 0) return num(0);
+        if (k == "pads_clear") return num(0);
         if (k == "pads_info") return writeText(buf, len, padsText());
         if (k == "state") return writeText(buf, len, saveState());
 
@@ -325,6 +319,19 @@ public:
         {
         case Show::dial: return writeText(buf, len, formatFloat(x / 10.0f, 1));
         case Show::dB: return writeText(buf, len, (x > 0 ? "+" : "") + formatFloat(x, 1) + " dB");
+        case Show::level:
+        {
+            // The level knobs are audio taper (engine: gain = (level / 100)^2).
+            if (x <= 0.0f)
+                return writeText(buf, len, "-INF");
+            const float db = 40.0f * std::log10(x / 100.0f);
+            return writeText(buf, len, (db > -0.05f ? "0.0" : formatFloat(db, 1)) + " dB");
+        }
+        case Show::pan:
+        {
+            const int p = static_cast<int>(std::lround(x)) - 50;
+            return writeText(buf, len, p == 0 ? "C" : (p < 0 ? "L" : "R") + std::to_string(std::abs(p)));
+        }
         case Show::tuning: return writeText(buf, len, formatFloat(Boom8::tomHz(knob->voice, x), 0) + " Hz");
         case Show::semitones:
         {

@@ -161,6 +161,41 @@ void testVoices()
         CHECK(d.sounding(LT) && d.sounding(LC));
     }
 
+    // SD and CP DECAY: lower is tighter, higher longer; 50 is the hardware.
+    const auto lengthMs = [](int voice, float decay) {
+        Boom8 d;
+        d.controls.sdDecay = d.controls.cpDecay = decay;
+        d.trigger(voice, 90);
+        const auto x = renderFor(d, 44100);
+        const float p = peak(x);
+        std::size_t last = 0;   // the last sample above -40 dB of the peak
+        for (std::size_t i = 0; i < x.size(); ++i)
+            if (std::fabs(x[i]) > p * 0.01f)
+                last = i;
+        return last * 1000.0 / Boom8::sampleRate;
+    };
+    for (const int v : { SD, CP })
+    {
+        const double tight = lengthMs(v, 0.0f), stock = lengthMs(v, 50.0f), loose = lengthMs(v, 100.0f);
+        std::printf("%s length (-40 dB): %.0f / %.0f / %.0f ms at DECAY 0 / 50 / 100\n", v == SD ? "SD" : "CP", tight,
+                    stock, loose);
+        CHECK(tight < stock * 0.6 && loose > stock * 1.3);
+    }
+
+    // Pan: hard left is silent on the right; centre is the same on both; a
+    // conga follows its tom's pan.
+    for (const float pan : { 0.0f, 50.0f, 100.0f })
+        for (const int v : { SD, LC })
+        {
+            Boom8 d;
+            d.controls.sdPan = d.controls.ltPan = pan;
+            d.trigger(v, 90);
+            std::vector<float> l(4410), r(4410);
+            d.render(l.data(), r.data(), 4410);
+            const float pl = peak(l), pr = peak(r);
+            CHECK(pan == 0.0f ? pr == 0.0f && pl > 0.1f : pan == 100.0f ? pl == 0.0f && pr > 0.1f : std::abs(pl - pr) < 1e-6f);
+        }
+
     // Everything at once, accented, stays clean; panic fades it all out.
     Boom8 d;
     d.controls.volume = 6.0f;
@@ -232,14 +267,16 @@ void testAdapter(const fs::path& root)
     CHECK(playPeak(e, inst, 60) == 0.0f);
     CHECK(get(e, inst, "pads_info").rfind("PADS: GM DRUM NOTES", 0) == 0);
 
-    // The instrument keys on the screen play their sounds.
-    silence(e, inst);
-    e->set_param(inst, "hit_cb", "1");
-    e->set_param(inst, "hit_cb", "0");
-    CHECK(renderPeak(e, inst, 4096) > 1000);
-
     // What the screen shows.
-    CHECK(get(e, inst, "bd_level_display") == "8.0");
+    CHECK(get(e, inst, "bd_level_display") == "-3.9 dB");   // audio taper: (80 / 100)^2
+    CHECK(get(e, inst, "accent_display") == "6.0");
+    e->set_param(inst, "cb_level", "0");
+    CHECK(get(e, inst, "cb_level_display") == "-INF");
+    e->set_param(inst, "cb_level", "60");
+    CHECK(get(e, inst, "oh_pan_display") == "C");
+    e->set_param(inst, "oh_pan", "20");
+    CHECK(get(e, inst, "oh_pan_display") == "L30");
+    CHECK(get(e, inst, "cp_decay_display") == "5.0");
     CHECK(get(e, inst, "lt_tuning_display") == "89 Hz");
     CHECK(get(e, inst, "volume_display") == "0.0 dB");
     CHECK(get(e, inst, "velocity_display") == "40%");
@@ -281,9 +318,11 @@ void testAdapter(const fs::path& root)
     e->set_param(inst, "bd_decay", "25");
     e->set_param(inst, "sd_snappy", "90");
     e->set_param(inst, "choke", "0");
+    e->set_param(inst, "cp_decay", "12");
     const auto state = get(e, inst, "state");
     CHECK(state.find(";bd_decay=25.00;") != std::string::npos && state.find(";sd_snappy=90.00;") != std::string::npos
-          && state.find(";choke=0;") != std::string::npos && state.find(";padmap=60.61.62.63") != std::string::npos);
+          && state.find(";choke=0;") != std::string::npos
+          && state.find(";cp_decay=12.00;") != std::string::npos && state.find(";oh_pan=20.00;") != std::string::npos && state.find(";padmap=60.61.62.63") != std::string::npos);
     e->set_param(other, "state", state.c_str());
     CHECK(get(e, other, "state") == state);
     e->destroy(other);

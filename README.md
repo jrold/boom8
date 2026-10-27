@@ -3,7 +3,8 @@
 An analog drum machine for the MPC Live III (standalone, modded unit), modelled
 on the classic 1980 analog rhythm machine: its sixteen sounds, its panel of
 knobs, and its colours. An Open MPC VST2 plug-in with a native touchscreen
-skin, like TINBOX and VOLTKIT.
+skin. One of the BOOM family with BOOM6 and BOOM9: the same pages and
+layout, each in its own original's colours.
 
 BOOM8 is an independent model. It contains no samples, code or artwork from
 the original machine's maker and isn't affiliated with them.
@@ -35,22 +36,27 @@ hat cuts the open hat. A hit at velocity 100 or more is an accented step: the
 drums' pitch bends. On the hardware a tom and its conga share a circuit; here
 they share their knobs but can play together.
 
-Not on the hardware (on **SETUP**): **VELOCITY** (how much softer pad hits
-play, 0 = the hardware's two levels), **BD TUNE** (±12 semitones) and **HAT
-CHOKE** (on, as on the hardware).
+Not on the hardware: **BD TUNE** (±12 semitones), the snare's and clap's
+**DECAY** (at 5.0 they are the hardware's length; turn down to tighten them,
+to about a quarter, or up to almost double), a **PAN** per instrument, and on
+**SETUP** **VELOCITY** (how much softer pad hits play, 0 = the hardware's two
+levels) and **HAT CHOKE** (on, as on the hardware).
 
 ## Pages
 
-**MACHINE**: the panel: ACCENT, the eleven instrument columns and the master
-VOLUME, with the sixteen instrument keys underneath in the original's four
-colours. Tap a key to hear its sound.
+**MACHINE**: ACCENT and a column for each instrument with its sound knobs top
+to bottom (instruments with only a level are on MIX).
 
-**SETUP**: PAD LEARN, CLEAR PADS and the extras above.
+**MIX**: a LEVEL fader (in dB) and a PAN knob for each instrument column, and
+the MASTER fader.
+
+**SETUP**: PAD LEARN, CLEAR PADS, VELOCITY and HAT CHOKE.
 
 Pads play General MIDI drum notes (BD 36, SD 38, LT 41, MT 45, HT 48, RS 37,
 CP 39, CB 56, CY 49, OH 46, CH 42, LC 64, MC 63, HC 62, CL 75, MA 70, with a
 few neighbours). Or tap **PAD LEARN** and hit the pads you want for the
-sixteen sounds in the order of the keys (BD to MA); it finishes after the
+sixteen sounds in the order BD, SD, LT, MT, HT, RS, CP, CB, CY, OH, CH, LC,
+MC, HC, CL, MA; it finishes after the
 sixteenth, saves the map with the project, and new BOOM8 tracks start with it
 (`data/padmap.txt`). **STOP twice** stops all sound. Everything is saved with
 the MPC project.
@@ -64,7 +70,9 @@ bash mpc/deploy.sh root@mpc-live-iii.local 2222
 
 Installing restarts the MPC app, so save your project first.
 `mpc/gen_layout.py` writes `mpc/params.json` and `mpc/layout.conf`; run it
-after changing either.
+after changing either. It, `mpc/skin/skin_post.py` and `mpc/skin/hardware.py`
+are the same files in every BOOM except gen_layout.py's MACHINE block and
+hardware.py's THEME block.
 
 ## Tests
 
