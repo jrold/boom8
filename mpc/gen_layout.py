@@ -89,6 +89,8 @@ FADER_CY, FADER_W, FADER_H = 300, 56, 300   # MIX: the faders, their pan knobs b
 PAN_CY = 560
 LABEL_GAP = 20   # px between a knob and its value, for the painted label
 SWITCH_W = 200   # SETUP: a switch's option keys' width
+DOT_R = 6        # the hit dots' knob radius (no other knob may use it; skin_post.py repaints them)
+HEAD_CY = 111    # the middle of the headings' capitals (skin_post.py draws the text at HEAD_Y + 11)
 LABELS.update({k: "PAN" for k in list(DEFAULTS) + list(NEW) if k.endswith("_pan")})
 # SETUP's on/off keys (skin_post.py draws them): key -> (caption, w, h).
 BIG_KEYS = {"learn": ("PAD LEARN", 400, 90)}
@@ -101,6 +103,20 @@ def col_w(page):
 
 def col_cx(page, i):
     return round(X0 + col_w(page) * (i + 0.5))
+
+
+def act_key(page, i):
+    """The hit dot parameter of column i of a page: act_<voice> for an
+    instrument (MACHINE finds it by the MIX column with the same heading), or
+    None (ACCENT, MASTER)."""
+    title, keys = PAGES[page][i]
+    if page != "MIX":
+        same = [j for j, (t, _) in enumerate(MIX) if t == title]
+        return act_key("MIX", same[0]) if same else None
+    return "act_" + keys[0][:-len("_level")] if keys[0].endswith("_level") else None
+
+
+ACTS = [k for k in (act_key("MIX", i) for i in range(len(MIX))) if k]
 
 
 def pname(k):
@@ -122,6 +138,9 @@ def params():
     out.append({"key": "pads_info", "name": "Pads", "min": 0, "max": 1, "display": "string", "type": "readout"})
     out += [knob(k, d) for k, d in NEW.items()]
     out += [{"key": k, "name": name, "options": opts, "default": d} for k, name, opts, d, _ in SWITCHES]
+    # Last: the hit dots, set by the engine (it reports them; nothing else does).
+    out += [{"key": k, "name": "%s Hit" % k[4:].upper(), "min": 0, "max": 1, "default": 0, "display": "int"}
+            for k in ACTS]
     mix = [k for _, keys in MIX for k in keys]
     sound = [k for _, keys in MACHINE for k in keys]
     missing = set(DEFAULTS) | set(NEW)
@@ -135,6 +154,17 @@ def params():
          + ["learn", "pads_clear", "pads_info"]},
     ]
     return {"name": NAME, "params": out, "sections": sections}
+
+
+def hit_dots(page, w):
+    """A dot per instrument column that lights when a pad hits it: a tiny
+    display-only knob (skin_post.py takes its touch away, paints it and moves
+    it left of the heading's text)."""
+    w("# Hit dots: the engine lights act_<voice> for a moment on each hit.")
+    for i in range(len(PAGES[page])):
+        k = act_key(page, i)
+        if k:
+            w("knob    cx=%d cy=%d r=%d label=\"\" key=%s bw=%d ns=0 vs=0" % (col_cx(page, i), HEAD_CY, DOT_R, k, 2 * DOT_R + 10))
 
 
 def layout():
@@ -158,6 +188,7 @@ def layout():
     for i, (_, keys) in enumerate(MACHINE):
         for key, cy in zip(keys, ROWS):
             w(knob % (col_cx("MACHINE", i), cy, KNOB_R, LABELS[key], key, KNOB_BW, VALUE_PX, LABEL_GAP))
+    hit_dots("MACHINE", w)
     w("")
     w("[tab MIX]")
     w("# A LEVEL fader and a PAN knob per instrument, and the MASTER fader.")
@@ -167,6 +198,7 @@ def layout():
           % (cx, FADER_CY, FADER_W, FADER_H, keys[0], KNOB_BW, VALUE_PX))
         if len(keys) > 1:
             w(knob % (cx, PAN_CY, KNOB_R, LABELS[keys[1]], keys[1], KNOB_BW, VALUE_PX, LABEL_GAP))
+    hit_dots("MIX", w)
     w("")
     w("[tab SETUP]")
     w("# PAD LEARN: tap it, then hit the pads you want for %s." % PADS_NOTE)

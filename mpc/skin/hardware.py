@@ -178,16 +178,24 @@ def bar(img, x0, y0, x1, y1, colour):
     ImageDraw.Draw(img).rectangle((int(x0 * SS), int(y0 * SS), int(x1 * SS) - 1, int(y1 * SS)), fill=colour + (255,))
 
 
-def heading(img, x0, x1, y, title, names=(), colour=None):
-    """An instrument's name over its column: capitals over a coloured bar
-    (and any full name small, under the bar)."""
-    d = ImageDraw.Draw(img)
-    cx = (x0 + x1) / 2
+def heading_font(title, x0, x1):
+    """The heading's font, shrunk to fit its column, and its text's width in
+    page pixels (letter-spaced as heading() draws it)."""
+    d = ImageDraw.Draw(Image.new("L", (1, 1)))
     px = 26
     f = font(px, bold=True)
     while d.textlength(title, font=f) + 2 * SS * (len(title) - 1) > (x1 - x0 - 10) * SS and px > 11:
         px -= 1
         f = font(px, bold=True)
+    return f, (d.textlength(title, font=f) + 2 * SS * (len(title) - 1)) / SS
+
+
+def heading(img, x0, x1, y, title, names=(), colour=None):
+    """An instrument's name over its column: capitals over a coloured bar
+    (and any full name small, under the bar)."""
+    d = ImageDraw.Draw(img)
+    cx = (x0 + x1) / 2
+    f, _ = heading_font(title, x0, x1)
     spaced(d, (cx * SS, (y + 11) * SS), title, f, INK + (255,), 2 * SS, anchor="mm")
     bar(img, x0 + 5, y + 27, x1 - 5, y + 32, colour or ACCENT)
     for i, n in enumerate(names):
@@ -462,3 +470,27 @@ def fader_strip(w, h, frames):
         fr.alpha_composite(cap, (3 * SS, int(y)))
         out.paste(fr, (0, k * s_h))
     return out.resize((w, h * frames), Image.Resampling.LANCZOS)
+
+
+# ---------------------------------------------------------------- hit dots
+
+def dot_strip(frame, frames):
+    """A hit dot's filmstrip (128 square frames, as a knob's): an unlit lamp
+    in the first half, lit in the accent with a soft glow in the second, so
+    a 0/1 value shows dark or lit."""
+    s = frame * SS
+    c = s / 2
+    r = s * 0.17
+    dark = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+    d = ImageDraw.Draw(dark)
+    d.ellipse((c - r - SS, c - r - SS, c + r + SS, c + r + SS), fill=(0, 0, 0, 90))
+    d.ellipse((c - r, c - r, c + r, c + r), fill=lerp(ACCENT, (40, 40, 40), 0.8) + (255,))
+    lit = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+    lit.alpha_composite(glow((s, s), (c - r * 1.8, c - r * 1.8, c + r * 1.8, c + r * 1.8), ACCENT, 2 * SS, 0.8, True))
+    d = ImageDraw.Draw(lit)
+    d.ellipse((c - r, c - r, c + r, c + r), fill=lerp(ACCENT, (255, 255, 255), 0.25) + (255,))
+    d.ellipse((c - r * 0.45, c - r * 0.6, c, c - r * 0.15), fill=(255, 255, 255, 140))
+    out = Image.new("RGBA", (s, s * frames), (0, 0, 0, 0))
+    for i in range(frames):
+        out.paste(lit if i >= frames // 2 else dark, (0, i * s))
+    return out.resize((frame, frame * frames), Image.Resampling.LANCZOS)

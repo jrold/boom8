@@ -338,6 +338,94 @@
    "max": 100,
    "default": 50,
    "dynamic_display": true
+  },
+  {
+   "key": "act_bd",
+   "name": "BD Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
+  },
+  {
+   "key": "act_sd",
+   "name": "SD Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
+  },
+  {
+   "key": "act_lt",
+   "name": "LT Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
+  },
+  {
+   "key": "act_mt",
+   "name": "MT Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
+  },
+  {
+   "key": "act_ht",
+   "name": "HT Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
+  },
+  {
+   "key": "act_rs",
+   "name": "RS Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
+  },
+  {
+   "key": "act_cp",
+   "name": "CP Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
+  },
+  {
+   "key": "act_cb",
+   "name": "CB Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
+  },
+  {
+   "key": "act_cy",
+   "name": "CY Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
+  },
+  {
+   "key": "act_oh",
+   "name": "OH Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
+  },
+  {
+   "key": "act_ch",
+   "name": "CH Hit",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "display": "int"
   }
  ],
  "sections": [

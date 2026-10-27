@@ -15,7 +15,8 @@ and hardware.py's THEME):
 3. The artwork, repainted as the machine's panel (hardware.py): the MACHINE
    and MIX pages with each instrument's abbreviation over a bar above its
    column, the name plate, the knobs and faders, their painted labels and
-   value windows; the SETUP page's sections, keys and switches.
+   value windows, and the hit dots by the headings; the SETUP page's
+   sections, keys and switches.
    Geometry and bindings stay as generated.
 
 Needs Pillow, the Titillium Web fonts build.sh copies to build/fonts/, and
@@ -45,7 +46,8 @@ TOGGLE_TOP = 18   # shadow_skin.py places a toggle at cy - 18
 
 KEYS = gl.BIG_KEYS   # toggle key -> (caption, width, height)
 
-HEAD_Y = 98          # top of the headings
+HEAD_Y = 98          # top of the headings (gen_layout.HEAD_CY is its text centre: + 11)
+DOT_GAP = 14         # a hit dot's centre, left of its heading's text
 PANEL_BOTTOM = 708   # where the column rules end
 
 
@@ -115,6 +117,53 @@ def big_keys(tui, params, save):
     missing = set(KEYS) - done
     if missing:
         sys.exit("skin_post: no toggle placed for %s" % ", ".join(sorted(missing)))
+
+
+def hit_dots(tui, params):
+    """The hit dots (gen_layout.hit_dots): each one's knob loses its touch
+    (a display-only definition, as a meter: just the filmstrip) and moves
+    left of its column's heading text."""
+    defs = find_defs(tui)
+    by_name = {d["key"]: d for d in defs}
+    s = 2 * gl.DOT_R + 10
+    if "sfDot" not in by_name:
+        frames = shadow_skin.ROT_FRAMES
+        defs.append({"key": "sfDot", "value": {
+            "version": 4, "actions": [],
+            "backgroundData": {"version": 1, "focussed": {"version": 1, "colour": "0", "image": ""},
+                               "unfocussed": {"version": 1, "colour": "0", "image": ""}},
+            "ignoreMousePresses": True, "disableCoarseDataWheel": True, "repeats": 1, "hideQLinkBounds": True,
+            "componentsData": [{"version": 2, "componentData": {
+                "version": 1, "name": "Dot", "type": "Knob",
+                "data": {"version": 5, "knobType": "FilmStrip", "filmStrip": "sh_knob_r%d.png" % gl.DOT_R,
+                         "numFrames": frames, "invert": False, "dragOrientation": "Vertical", "handleName": "Data"}},
+                "handle remapping": {"version": 1, "map": []},
+                "bounds": {"version": 2, "acceptsHWFocus": "No", "showWhenDataModelInvalid": "Show",
+                           "whenVisible": "Always", "boundsType": "Absolute", "bounds": "0 0 %d %d" % (s, s),
+                           "additionalInvalidatingHandles": []}}]}})
+    moved = 0
+    for d in defs:
+        page = d["key"].split("|")[0]
+        if "|" not in d["key"] or page not in gl.PAGES:
+            continue
+        cw = gl.col_w(page)
+        for c in d["value"]["componentsData"]:
+            remap = c.get("handle remapping", {}).get("map") or []
+            if not remap:
+                continue
+            key = params[int(remap[0]["value"].split()[-1])]["key"]
+            if not key.startswith("act_"):
+                continue
+            i = next(j for j in range(len(gl.PAGES[page])) if gl.act_key(page, j) == key)
+            x0 = gl.X0 + cw * i
+            _, width = hw.heading_font(gl.PAGES[page][i][0], x0, x0 + cw)
+            cx = gl.col_cx(page, i) - width / 2 - DOT_GAP
+            c["componentData"]["type"] = "sfDot"
+            c["bounds"]["bounds"] = "%d %d %d %d" % (round(cx - s / 2), gl.HEAD_CY - s // 2 - Y_OFF, s, s)
+            c["bounds"]["acceptsHWFocus"] = "No"
+            moved += 1
+    if moved != sum(1 for p in gl.PAGES for j in range(len(gl.PAGES[p])) if gl.act_key(p, j)):
+        sys.exit("skin_post: placed %d hit dots, gen_layout has more" % moved)
 
 
 # MPC slices a knob filmstrip as the generator's 128 square frames whatever
@@ -204,6 +253,8 @@ def page(tab, t, params):
         elif k == "enum_h" and w.get("label"):   # a switch's caption, over its keys
             top = min(y for _, y, _, _ in shadow_skin.seg_rects(w))
             hw.label(bg, w["cx"], top - 20 - Y_OFF, w["label"], 17, hw.INK, spacing=2)
+        elif k == "knob" and w["key"].startswith("act_"):
+            continue   # a hit dot: its filmstrip is all of it (hit_dots)
         elif k == "knob":
             hw.knob_base(bg, w["cx"], w["cy"] - Y_OFF, 2 * w["r"] + 10)
             x0, y0, x1, y1 = knob_value_box(w)
@@ -229,6 +280,7 @@ def main():
         written.append(name)
 
     big_keys(tui, params, save)
+    hit_dots(tui, params)
     colour_knob_labels(tui)
     json.dump(tui, open(tui_path, "w"), indent=1)
 
@@ -271,7 +323,7 @@ def main():
         strip = Image.open(os.path.join(pdir, name))
         frame, frames = strip.width, strip.height // strip.width
         check_knob_strip(r, frame, frames)
-        save(hw.knob_strip(frame, frames), name)
+        save(hw.dot_strip(frame, frames) if r == gl.DOT_R else hw.knob_strip(frame, frames), name)
 
     print("skin_post: %d big keys, %d images repainted" % (len(KEYS), len(written)))
 

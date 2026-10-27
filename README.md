@@ -50,6 +50,9 @@ to bottom (instruments with only a level are on MIX).
 **MIX**: a LEVEL fader (in dB) and a PAN knob for each instrument column, and
 the MASTER fader.
 
+On both pages a small dot left of each instrument's name lights for a moment
+when a pad plays it, to see which pad plays what.
+
 **SETUP**: PAD LEARN, CLEAR PADS, VELOCITY and HAT CHOKE.
 
 Pads play General MIDI drum notes (BD 36, SD 38, LT 41, MT 45, HT 48, RS 37,

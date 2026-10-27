@@ -123,6 +123,13 @@ const Knob* findKnob(const std::string& key)
     return nullptr;
 }
 
+// The hit dots by the column headings: act_<column> is 1 for kHitFrames
+// after a pad hits one of the column's voices (reported to the wrapper on
+// and off, as the engine changing a parameter by itself).
+constexpr std::array<const char*, 11> kHitKey { "act_bd", "act_sd", "act_lt", "act_mt", "act_ht", "act_rs", "act_cp", "act_cb", "act_cy", "act_oh", "act_ch" };
+constexpr std::array<int, voiceCount> kHitColumn { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 2, 3, 4, 5, 6 };
+constexpr int kHitFrames = 6615;   // 150 ms
+
 enum ChangedKey : unsigned
 {
     changedLearn = 1u << 0,
@@ -229,7 +236,10 @@ public:
             }
             const int voice = voiceFor(d1);
             if (voice >= 0)
+            {
                 machine.trigger(voice, d2);
+                lightHit(voice);
+            }
         }
         else if (status == 0xB0 && (d1 == 120 || d1 == 123))
         {
@@ -303,6 +313,9 @@ public:
         const auto num = [&](const double x) { return writeText(buf, len, formatFloat(static_cast<float>(x), 4)); };
 
         if (k == "choke") return num(c.choke);
+        for (std::size_t h = 0; h < kHitKey.size(); ++h)
+            if (k == kHitKey[h])
+                return num(hitLeft[h] > 0);
         if (k == "learn") return num(learning);
         if (k == "pads_clear") return num(0);
         if (k == "pads_info") return writeText(buf, len, padsText());
@@ -347,6 +360,9 @@ public:
     {
         if (out == nullptr || frames <= 0)
             return;
+        for (std::size_t c = 0; c < hitLeft.size(); ++c)
+            if (hitLeft[c] > 0 && (hitLeft[c] -= frames) <= 0)
+                changedHits |= 1u << c;   // the dot goes out
         int done = 0;
         while (done < frames)
         {
@@ -371,6 +387,13 @@ public:
             writeText(key, len, "learn");
             return true;
         }
+        for (std::size_t c = 0; c < kHitKey.size(); ++c)
+            if ((changedHits & (1u << c)) != 0)
+            {
+                changedHits &= ~(1u << c);
+                writeText(key, len, kHitKey[c]);
+                return true;
+            }
         return false;
     }
 
@@ -378,6 +401,15 @@ private:
     static std::int16_t toPcm(const float v)
     {
         return static_cast<std::int16_t>(std::lround(std::clamp(v, -1.0f, 1.0f) * 32767.0f));
+    }
+
+    // A pad hit a voice: its column's dot lights (reported if it was out).
+    void lightHit(const int voice)
+    {
+        const auto c = static_cast<std::size_t>(kHitColumn[static_cast<std::size_t>(voice)]);
+        if (hitLeft[c] <= 0)
+            changedHits |= 1u << c;
+        hitLeft[c] = kHitFrames;
     }
 
     int voiceFor(const int note) const
@@ -522,6 +554,8 @@ private:
     bool quit = false;
     std::vector<int> learnedNotes;   // learnedNotes[v] plays voice v
     unsigned changedKeys = 0;
+    std::array<int, kHitKey.size()> hitLeft {};   // frames each hit dot stays lit
+    unsigned changedHits = 0;                     // hit dots to report, a bit per column
     std::optional<std::chrono::steady_clock::time_point> lastSuspend;
     std::map<std::string, std::chrono::steady_clock::time_point> lastPress;
     // BOOM8_DEBOUNCE_MS: the offline test turns it off to press keys quickly.

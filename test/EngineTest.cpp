@@ -333,6 +333,29 @@ void testAdapter(const fs::path& root)
     silence(e, inst);
     CHECK(playPeak(e, inst, 38) > 0.05f);
 
+    // A pad hit lights its column's hit dot for 150 ms; the adapter reports
+    // it going on and off.
+    {
+        void* h = e->create(nullptr);
+        char changed[64];
+        while (mpc_engine_changed(h, changed, sizeof changed)) {}
+        CHECK(get(e, h, "act_lt") == "0.0000");
+        const std::uint8_t hit[3] = { 0x90, 64, 90 };
+        e->midi(h, hit, 3);
+        CHECK(get(e, h, "act_lt") == "1.0000");
+        CHECK(mpc_engine_changed(h, changed, sizeof changed) == 1 && std::string(changed) == "act_lt");
+        CHECK(mpc_engine_changed(h, changed, sizeof changed) == 0);
+        renderPeak(e, h, 4096);   // 93 ms: still lit
+        CHECK(get(e, h, "act_lt") == "1.0000");
+        renderPeak(e, h, 4096);
+        CHECK(get(e, h, "act_lt") == "0.0000");
+        CHECK(mpc_engine_changed(h, changed, sizeof changed) == 1 && std::string(changed) == "act_lt");
+        e->set_param(h, "act_lt", "1");   // the screen can't light it
+        CHECK(get(e, h, "act_lt") == "0.0000");
+        CHECK(get(e, h, "state").find("act_") == std::string::npos);
+        e->destroy(h);
+    }
+
     // STOP twice stops all sound; once lets it ring.
     e->set_param(inst, "cy_decay", "100");
     const std::uint8_t cy[3] = { 0x90, 49, 127 };
