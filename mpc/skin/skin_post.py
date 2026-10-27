@@ -15,7 +15,7 @@ and hardware.py's THEME):
 3. The artwork, repainted as the machine's panel (hardware.py): the MACHINE
    and MIX pages with each instrument's abbreviation over a bar above its
    column, the name plate, the knobs and faders, their painted labels and
-   value windows; the SETUP page's sections.
+   value windows; the SETUP page's sections, keys and switches.
    Geometry and bindings stay as generated.
 
 Needs Pillow, the Titillium Web fonts build.sh copies to build/fonts/, and
@@ -201,6 +201,9 @@ def page(tab, t, params):
         elif k == "slider_v":
             hw.fader_base(bg, w["cx"], w["cy"] - Y_OFF, w["h"])
             hw.well(bg, box(*slider_value_box(w)))
+        elif k == "enum_h" and w.get("label"):   # a switch's caption, over its keys
+            top = min(y for _, y, _, _ in shadow_skin.seg_rects(w))
+            hw.label(bg, w["cx"], top - 20 - Y_OFF, w["label"], 17, hw.INK, spacing=2)
         elif k == "knob":
             hw.knob_base(bg, w["cx"], w["cy"] - Y_OFF, 2 * w["r"] + 10)
             x0, y0, x1, y1 = knob_value_box(w)
@@ -243,6 +246,11 @@ def main():
                     caption = w.get("label", "")
                     save(hw.key(bw, bh, caption, False, led=False), os.path.basename(path))
                     save(hw.key(bw, bh, caption, True, led=False), os.path.basename(path)[:-len("_off.png")] + "_on.png")
+            elif k == "enum_h":   # a switch: one key per option, lit when chosen
+                for o, (_, _, sw, sh) in enumerate(shadow_skin.seg_rects(w)):
+                    caption = w["options"][o].upper()
+                    for lit in (False, True):
+                        save(hw.key(sw, sh, caption, lit), "sh_seg_%s_%d_%s.png" % (w["key"], o, "on" if lit else "off"))
             elif k == "knob":
                 knob_sizes.add(w["r"])
 

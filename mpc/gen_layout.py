@@ -58,6 +58,7 @@ TOGGLES = [("choke", "Hat Choke", 1)]   # key, name, default: on SETUP
 # Added after the first release, after the others.
 NEW = dict(sd_decay=50, cp_decay=50, bd_pan=50, sd_pan=50, lt_pan=50, mt_pan=50, ht_pan=50, rs_pan=50, cp_pan=50,
            cb_pan=50, cy_pan=50, oh_pan=50, ch_pan=50)
+SWITCHES = []   # switches between options on SETUP (key, name, options, default, caption)
 RANGES = {"volume": (-24, 6), "bd_tune": (-12, 12)}   # any knob not 0..100
 
 # The labels painted under the knobs (the instrument is in the heading above);
@@ -87,6 +88,7 @@ KNOB_R, KNOB_BW, VALUE_PX = 34, 100, 26
 FADER_CY, FADER_W, FADER_H = 300, 56, 300   # MIX: the faders, their pan knobs below
 PAN_CY = 560
 LABEL_GAP = 20   # px between a knob and its value, for the painted label
+SWITCH_W = 200   # SETUP: a switch's option keys' width
 LABELS.update({k: "PAN" for k in list(DEFAULTS) + list(NEW) if k.endswith("_pan")})
 # SETUP's on/off keys (skin_post.py draws them): key -> (caption, w, h).
 BIG_KEYS = {"learn": ("PAD LEARN", 400, 90)}
@@ -119,6 +121,7 @@ def params():
     out.append({"key": "pads_clear", "name": "Clear Pads", "min": 0, "max": 1, "momentary": True, "hold_ms": 120})
     out.append({"key": "pads_info", "name": "Pads", "min": 0, "max": 1, "display": "string", "type": "readout"})
     out += [knob(k, d) for k, d in NEW.items()]
+    out += [{"key": k, "name": name, "options": opts, "default": d} for k, name, opts, d, _ in SWITCHES]
     mix = [k for _, keys in MIX for k in keys]
     sound = [k for _, keys in MACHINE for k in keys]
     missing = set(DEFAULTS) | set(NEW)
@@ -128,7 +131,8 @@ def params():
     sections = [
         {"label": "Sound", "keys": sound},
         {"label": "Mix", "keys": mix},
-        {"label": "Setup", "keys": ["velocity"] + [k for k, _, _ in TOGGLES] + ["learn", "pads_clear", "pads_info"]},
+        {"label": "Setup", "keys": ["velocity"] + [k for k, _, _ in TOGGLES] + [k for k, *_ in SWITCHES]
+         + ["learn", "pads_clear", "pads_info"]},
     ]
     return {"name": NAME, "params": out, "sections": sections}
 
@@ -176,6 +180,14 @@ def layout():
     w("# The on/off extras (skin/skin_post.py draws them as keys).")
     for i, (k, _, _) in enumerate(TOGGLES):
         w("toggle  cx=%d cy=560 label=\"%s\" key=%s bw=240" % (520 + 300 * i, BIG_KEYS[k][0], k))
+    # The switches after them (skin_post.py draws the options as keys and the
+    # caption over them).
+    x = 520 + 300 * len(TOGGLES) - 120 + 40   # 40 px right of the last toggle key
+    for k, _, opts, _, caption in SWITCHES:
+        width = len(opts) * (SWITCH_W + 2) - 2
+        w("enum_h  cx=%d cy=560 sw=%d sh=80 label=\"%s\" key=%s options=%s"
+          % (x + width // 2, SWITCH_W, caption, k, ",".join(opts)))
+        x += width + 40
     return "\n".join(L) + "\n"
 
 
